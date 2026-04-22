@@ -1,0 +1,526 @@
+# ────────────────────────────────────────────────────────────
+# Homelab — Docker Compose stack
+#
+# A curated, self-hosted stack covering media, photos, security,
+# observability and reverse proxy. Every container runs with
+# `no-new-privileges` and binds only to the LAN interface.
+#
+# Setup:  cp .env.example .env  →  edit  →  docker compose up -d
+# ────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Reverse proxy ────────────────────────────────────────
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:80:80"
+      - "${LAN_IP}:81:81"
+      - "${LAN_IP}:443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${APPDATA_DIR}/npm/data:/data
+      - ${APPDATA_DIR}/npm/letsencrypt:/etc/letsencrypt
+    networks: [default]
+
+  # ── Dashboards ───────────────────────────────────────────
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=${LAN_IP}:3000,${LAN_IP},localhost,homepage.${DOMAIN}
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    volumes:
+      - ${APPDATA_DIR}/homepage:/app/config
+      - ${MEDIA_DIR}:/mnt/media:ro
+      - ${STORAGE_DIR}:/mnt/storage:ro
+    ports:
+      - "${LAN_IP}:3000:3000"
+    depends_on: [docker-proxy]
+    networks: [default]
+
+  glance:
+    image: glanceapp/glance:latest
+    container_name: glance
+    restart: always
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:8092:8080"
+    volumes:
+      - ${APPDATA_DIR}/glance/glance.yml:/app/config/glance.yml
+    networks: [default]
+
+  # ── Docker management ────────────────────────────────────
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-proxy
+    restart: always
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "127.0.0.1:2375:2375"
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      - SERVICES=1
+      - TASKS=1
+      - VOLUMES=1
+      - POST=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [default]
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    volumes:
+      - ${APPDATA_DIR}/portainer:/data
+    ports:
+      - "${LAN_IP}:9000:9000"
+    depends_on: [docker-proxy]
+    networks: [default]
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    ports:
+      - "${LAN_IP}:8888:8080"
+    depends_on: [docker-proxy]
+    networks: [default]
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - DOCKER_HOST=tcp://docker-proxy:2375
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      - TZ=${TZ}
+    depends_on: [docker-proxy]
+    networks: [default]
+
+  # ── Media stack ──────────────────────────────────────────
+  plex:
+    image: lscr.io/linuxserver/plex:latest
+    container_name: plex
+    network_mode: host
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - VERSION=docker
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/plex:/config
+      - ${MEDIA_DIR}:/mnt/media
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/sonarr:/config
+      - ${STORAGE_DIR}/data:/data
+      - ${MEDIA_DIR}:/mnt/media
+    ports:
+      - "${LAN_IP}:8989:8989"
+    networks: [default]
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/radarr:/config
+      - ${STORAGE_DIR}/data:/data
+      - ${MEDIA_DIR}:/mnt/media
+    ports:
+      - "${LAN_IP}:7878:7878"
+    networks: [default]
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/lidarr:/config
+      - ${STORAGE_DIR}/data:/data
+      - ${MEDIA_DIR}/music:/music
+    ports:
+      - "${LAN_IP}:8686:8686"
+    networks: [default]
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/bazarr:/config
+      - ${STORAGE_DIR}/data:/data
+      - ${MEDIA_DIR}:/mnt/media
+    ports:
+      - "${LAN_IP}:6767:6767"
+    networks: [default]
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/prowlarr:/config
+    ports:
+      - "${LAN_IP}:9696:9696"
+    networks: [default]
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    ports:
+      - "${LAN_IP}:8191:8191"
+    networks: [default]
+
+  qbittorrent:
+    # Bound to VPN interface on host — see security/vpn-killswitch.md
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: host
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8080
+    volumes:
+      - ${APPDATA_DIR}/qbittorrent:/config
+      - ${STORAGE_DIR}/data:/data
+
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true
+      - inContainer=true
+      - ffmpegVersion=7
+    volumes:
+      - ${APPDATA_DIR}/tdarr/server:/app/server
+      - ${APPDATA_DIR}/tdarr/configs:/app/configs
+      - ${APPDATA_DIR}/tdarr/logs:/app/logs
+      - ${STORAGE_DIR}/tdarr-cache:/temp
+      - ${MEDIA_DIR}:/media
+    ports:
+      - "${LAN_IP}:8265:8265"
+      - "${LAN_IP}:8266:8266"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [default]
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "${LAN_IP}:5055:5055"
+    volumes:
+      - ${APPDATA_DIR}/seerr:/app/config
+    networks: [default]
+
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/audiobookshelf/config:/config
+      - ${APPDATA_DIR}/audiobookshelf/metadata:/metadata
+      - ${MEDIA_DIR}/books:/books
+    ports:
+      - "${LAN_IP}:8000:80"
+    networks: [default]
+
+  # ── Photos (Immich) ──────────────────────────────────────
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
+    container_name: immich_server
+    restart: always
+    security_opt: [no-new-privileges:true]
+    env_file: [.env]
+    volumes:
+      - ${STORAGE_DIR}/immich-photos:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "${LAN_IP}:2283:2283"
+    depends_on: [immich-redis, immich-postgres]
+    networks: [default]
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
+    container_name: immich_machine_learning
+    restart: always
+    security_opt: [no-new-privileges:true]
+    env_file: [.env]
+    volumes:
+      - ${APPDATA_DIR}/immich/model-cache:/cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [default]
+
+  immich-redis:
+    image: redis:6.2-alpine
+    container_name: immich_redis
+    restart: always
+    security_opt: [no-new-privileges:true]
+    networks: [default]
+
+  immich-postgres:
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    container_name: immich_postgres
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_DB=${DB_DATABASE_NAME}
+    volumes:
+      - ${APPDATA_DIR}/immich/postgres:/var/lib/postgresql/data
+    networks: [default]
+
+  # ── Network-wide DNS / ad-blocking ───────────────────────
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    restart: unless-stopped
+    network_mode: host
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - ${APPDATA_DIR}/adguard/work:/opt/adguardhome/work
+      - ${APPDATA_DIR}/adguard/conf:/opt/adguardhome/conf
+
+  # ── Security ─────────────────────────────────────────────
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - GID=${PGID}
+      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/nginx
+      - TZ=${TZ}
+      - DOCKER_HOST=tcp://docker-proxy:2375
+    volumes:
+      - ${APPDATA_DIR}/crowdsec/config:/etc/crowdsec
+      - ${APPDATA_DIR}/crowdsec/data:/var/lib/crowdsec/data
+      - /var/log:/var/log:ro
+      - ${APPDATA_DIR}/npm/data/logs:/npm-logs:ro
+    ports:
+      - "${LAN_IP}:8881:8080"
+    depends_on: [docker-proxy]
+    networks: [default]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    command: tunnel --loglevel info run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks: [default]
+
+  # ── Observability ────────────────────────────────────────
+  glances:
+    image: nicolargo/glances:latest-full
+    container_name: glances
+    restart: always
+    pid: host
+    network_mode: host
+    security_opt: [no-new-privileges:true]
+    cap_add: [SYS_PTRACE, NET_ADMIN]
+    volumes:
+      - /dev:/dev:ro
+      - ${STORAGE_DIR}:/mnt/storage:ro
+      - ${MEDIA_DIR}:/mnt/media
+    environment:
+      - GLANCES_OPT=-w --bind ${LAN_IP}
+      - DOCKER_HOST=tcp://127.0.0.1:2375
+    depends_on: [docker-proxy]
+
+  scrutiny:
+    # Reads SMART data — needs raw disk access (acceptable trade-off)
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    container_name: scrutiny
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    cap_add: [SYS_RAWIO]
+    ports:
+      - "${LAN_IP}:8082:8080"
+    volumes:
+      - /run/udev:/run/udev:ro
+      - ${APPDATA_DIR}/scrutiny/config:/opt/scrutiny/config
+      - ${APPDATA_DIR}/scrutiny/influxdb:/opt/scrutiny/influxdb
+    devices:
+      - /dev/sda:/dev/sda
+      - /dev/sdb:/dev/sdb
+      - /dev/nvme0n1:/dev/nvme0n1
+    networks: [default]
+
+  speedtest:
+    image: lscr.io/linuxserver/speedtest-tracker:latest
+    container_name: speedtest
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - SPEEDTEST_SCHEDULE=0 3 * * *
+      - APP_KEY=${SPEEDTEST_APP_KEY}
+    volumes:
+      - ${APPDATA_DIR}/speedtest/config:/config
+    ports:
+      - "${LAN_IP}:8765:80"
+    networks: [default]
+
+  # ── Notifications & RSS ──────────────────────────────────
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    command: serve
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/ntfy/cache:/var/cache/ntfy
+      - ${APPDATA_DIR}/ntfy/etc:/etc/ntfy
+    ports:
+      - "${LAN_IP}:8084:80"
+    networks: [default]
+
+  miniflux:
+    image: miniflux/miniflux:latest
+    container_name: miniflux
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - DATABASE_URL=postgres://miniflux:${MINIFLUX_DB_PASS}@miniflux-db/miniflux?sslmode=disable
+      - RUN_MIGRATIONS=1
+      - CREATE_ADMIN=1
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=${MINIFLUX_ADMIN_PASS}
+      - BASE_URL=https://miniflux.${DOMAIN}
+      - TZ=${TZ}
+    ports:
+      - "${LAN_IP}:8070:8080"
+    depends_on: [miniflux-db]
+    networks: [default]
+
+  miniflux-db:
+    image: postgres:16-alpine
+    container_name: miniflux-db
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - POSTGRES_USER=miniflux
+      - POSTGRES_PASSWORD=${MINIFLUX_DB_PASS}
+      - POSTGRES_DB=miniflux
+    volumes:
+      - ${APPDATA_DIR}/miniflux-db:/var/lib/postgresql/data
+    networks: [default]
+
+  # ── Utilities ────────────────────────────────────────────
+  it-tools:
+    image: corentinth/it-tools:latest
+    container_name: it-tools
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:8090:80"
+    networks: [default]
+
+  drawio:
+    image: jgraph/drawio:latest
+    container_name: drawio
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:8108:8080"
+    networks: [default]
+
+networks:
+  default:
+    name: homelab
+    driver: bridge
