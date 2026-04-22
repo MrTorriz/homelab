@@ -13,3 +13,6 @@ backups/
 *~
 .idea/
 .vscode/
+
+# Lokal kontextfil för Claude Code — ska aldrig pushas
+CLAUDE.md
