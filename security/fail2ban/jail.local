@@ -1,0 +1,15 @@
+[DEFAULT]
+bantime  = 1h
+findtime = 10m
+maxretry = 5
+backend  = systemd
+ignoreip = 127.0.0.1/8 192.168.0.0/16
+
+[sshd]
+enabled = true
+mode    = aggressive
+port    = ssh
+logpath = %(sshd_log)s
+
+# CrowdSec handles web-facing services (NPM, Immich, etc.) — fail2ban
+# stays focused on SSH only to keep the two systems from racing.
