@@ -1,0 +1,32 @@
+# Top-bar widgets for Homepage
+# https://gethomepage.dev/widgets/
+
+- resources:
+    cpu: true
+    memory: true
+    disk: /
+
+- resources:
+    label: Media
+    disk:
+      - /mnt/media
+      - /mnt/storage
+
+- search:
+    provider: duckduckgo
+    target: _blank
+
+- datetime:
+    text_size: xl
+    locale: sv-SE
+    format:
+      timeStyle: short
+      dateStyle: short
+
+- glances:
+    url: http://glances:61208
+    cpu: true
+    mem: true
+    cputemp: true
+    uptime: true
+    expanded: true

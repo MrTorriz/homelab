@@ -1,0 +1,150 @@
+# Homepage services config — group-by-row layout
+#
+# Replace `example.com` with your domain before deploying.
+# `container:` entries are auto-discovered via the docker-socket-proxy.
+
+# ── Row 1: Infrastructure ────────────────────────────────
+
+- Network:
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: https://adguard.example.com
+        container: adguardhome
+        description: DNS filtering & ad blocking
+    - Nginx Proxy Manager:
+        icon: nginx-proxy-manager.png
+        href: https://npm.example.com
+        container: npm
+        description: Reverse proxy & SSL certs
+    - Router:
+        icon: mdi-router-wireless
+        href: https://router.example.com
+        ping: 192.168.1.1
+        description: Gateway
+
+- Docker:
+    - Portainer:
+        icon: portainer.png
+        href: https://portainer.example.com
+        container: portainer
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.example.com
+        container: dozzle
+    - Watchtower:
+        icon: watchtower.png
+        container: watchtower
+        description: Auto-updates nightly
+    - FlareSolverr:
+        icon: flaresolverr.png
+        container: flaresolverr
+
+- Security:
+    - CrowdSec:
+        icon: crowdsec.png
+        container: crowdsec
+        description: Behavioural IPS
+    - Cloudflared:
+        icon: cloudflare.png
+        container: cloudflared
+        description: Zero-trust tunnel
+
+- System:
+    - Glances:
+        icon: sh-glances.png
+        href: https://glances.example.com
+        container: glances
+    - Scrutiny:
+        icon: scrutiny.png
+        href: https://scrutiny.example.com
+        container: scrutiny
+        description: SMART monitoring
+    - Speedtest Tracker:
+        icon: speedtest-tracker.png
+        href: https://speedtest.example.com
+        container: speedtest
+
+# ── Row 2: Media ─────────────────────────────────────────
+
+- Streaming:
+    - Plex:
+        icon: plex.png
+        href: https://plex.example.com
+        container: plex
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: https://abs.example.com
+        container: audiobookshelf
+
+- Automation:
+    - Sonarr:
+        icon: sonarr.png
+        href: https://sonarr.example.com
+        container: sonarr
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: '{{HOMEPAGE_VAR_SONARR_KEY}}'
+    - Radarr:
+        icon: radarr.png
+        href: https://radarr.example.com
+        container: radarr
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: '{{HOMEPAGE_VAR_RADARR_KEY}}'
+    - Lidarr:
+        icon: lidarr.png
+        href: https://lidarr.example.com
+        container: lidarr
+    - Bazarr:
+        icon: bazarr.png
+        href: https://bazarr.example.com
+        container: bazarr
+    - Prowlarr:
+        icon: prowlarr.png
+        href: https://prowlarr.example.com
+        container: prowlarr
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: https://qbittorrent.example.com
+        container: qbittorrent
+        description: VPN-bound (killswitch)
+
+- Pipeline:
+    - Tdarr:
+        icon: tdarr.png
+        href: https://tdarr.example.com
+        container: tdarr
+        description: Transcode pipeline (NVENC)
+    - Seerr:
+        icon: jellyseerr.png
+        href: https://seerr.example.com
+        container: seerr
+        description: Request UI
+
+# ── Row 3: Photos & utilities ────────────────────────────
+
+- Photos:
+    - Immich:
+        icon: immich.png
+        href: https://immich.example.com
+        container: immich_server
+
+- Utilities:
+    - Miniflux:
+        icon: miniflux.png
+        href: https://rss.example.com
+        container: miniflux
+    - ntfy:
+        icon: ntfy.png
+        href: https://ntfy.example.com
+        container: ntfy
+    - IT-Tools:
+        icon: it-tools.png
+        href: https://tools.example.com
+        container: it-tools
+    - draw.io:
+        icon: drawio.png
+        href: https://drawio.example.com
+        container: drawio
