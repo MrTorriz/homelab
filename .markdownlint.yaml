@@ -1,0 +1,7 @@
+---
+default: true
+MD013: false   # line length — markdown-tables och mermaid blir radvis långa
+MD033: false   # inline HTML — behövs för centered headers och <table>
+MD041: false   # första raden behöver inte vara H1 (vi börjar med <div align="center">)
+MD024:
+  siblings_only: true
