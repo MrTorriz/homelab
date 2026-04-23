@@ -99,14 +99,14 @@ Full per-service catalogue: [`docker/README.md`](docker/README.md)
 
 ## Repo layout
 
-```
+```text
 .
 ├── docker/              # Compose stack (~30 services) + .env.example
 ├── homepage/            # Dashboard config (services + widgets)
 ├── scripts/             # deploy, healthcheck, VPN rotation
 ├── security/            # UFW, fail2ban, SSH, hardening checklist
 ├── docs/                # Architecture, security model, hardware, decisions
-└── .github/workflows/   # CI: shellcheck + yamllint
+└── .github/workflows/   # CI: shellcheck + yamllint + markdownlint + gitleaks
 ```
 
 ---
