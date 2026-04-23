@@ -14,14 +14,6 @@ updates:
       - github-actions
     open-pull-requests-limit: 5
 
-  - package-ecosystem: docker
-    directory: /docker
-    schedule:
-      interval: weekly
-      day: monday
-    commit-message:
-      prefix: docker
-    labels:
-      - dependencies
-      - docker
-    open-pull-requests-limit: 10
+# docker ecosystem removed — Dependabot's "docker" ecosystem only monitors
+# Dockerfiles, not docker-compose image tags. For compose tag updates,
+# Watchtower handles runtime; manual review handles pinned services.
