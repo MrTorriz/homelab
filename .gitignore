@@ -16,3 +16,6 @@ backups/
 
 # Lokal kontextfil för Claude Code — ska aldrig pushas
 CLAUDE.md
+
+# Lokal arbetsjournal (skrivs av /homelab-skill) — ska aldrig pushas
+JOURNAL.md
