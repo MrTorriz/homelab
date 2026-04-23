@@ -5,5 +5,6 @@ MD033: false   # inline HTML — used for centered headers and <table>
 MD041: false   # first line need not be H1 (README starts with <div align="center">)
 MD042: false   # allow [label](#) decorative-anchor badges
 MD032: false   # don't require blank lines around lists (tight list style)
+MD060: false   # allow compact table pipe style (no mandatory pipe padding)
 MD024:
   siblings_only: true
