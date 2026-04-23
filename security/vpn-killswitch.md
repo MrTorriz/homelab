@@ -15,7 +15,7 @@ The torrent client runs in `network_mode: host`. The host has a Mullvad WireGuar
 
 This is kernel-level. There is no userspace agent that can fail open.
 
-```
+```bash
 mullvad lockdown-mode set on
 mullvad always-require-vpn set on
 mullvad connect
@@ -25,7 +25,7 @@ mullvad connect
 
 In qBittorrent's preferences:
 
-```
+```text
 Connection → Network Interface: wg0-mullvad
 Connection → Optional IP address: <leave blank>
 Advanced → Network interface address: wg0-mullvad
