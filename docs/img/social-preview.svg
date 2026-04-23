@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#010409"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3fb950"/>
+      <stop offset="1" stop-color="#2f81f7"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#21262d" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#grid)" opacity="0.5"/>
+
+  <!-- top strip: prompt -->
+  <text x="60" y="72" font-size="22" fill="#7d8590">
+    <tspan fill="#3fb950">mserver</tspan><tspan fill="#7d8590">@</tspan><tspan fill="#2f81f7">homelab</tspan><tspan fill="#7d8590">:~$</tspan> <tspan fill="#e6edf3">cat README.md</tspan>
+  </text>
+
+  <!-- title -->
+  <text x="60" y="200" font-size="96" font-weight="700" fill="#e6edf3" letter-spacing="-2">Homelab</text>
+
+  <!-- tagline -->
+  <text x="60" y="250" font-size="26" fill="#8b949e">
+    Self-hosted infrastructure as code · Ubuntu 24.04 · ~30 Docker services
+  </text>
+
+  <!-- accent line -->
+  <rect x="60" y="285" width="180" height="4" fill="url(#accent)" rx="2"/>
+
+  <!-- metrics grid -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
+    <!-- row 1 -->
+    <g transform="translate(60, 360)">
+      <text font-size="56" font-weight="700" fill="#3fb950">0</text>
+      <text y="36" x="88" font-size="18" fill="#8b949e">open inbound</text>
+      <text y="58" x="88" font-size="18" fill="#8b949e">ports</text>
+    </g>
+
+    <g transform="translate(340, 360)">
+      <text font-size="56" font-weight="700" fill="#2f81f7">~30</text>
+      <text y="36" x="128" font-size="18" fill="#8b949e">containerised</text>
+      <text y="58" x="128" font-size="18" fill="#8b949e">services</text>
+    </g>
+
+    <g transform="translate(680, 360)">
+      <text font-size="56" font-weight="700" fill="#e3b341">22k+</text>
+      <text y="36" x="156" font-size="18" fill="#8b949e">weekly UFW</text>
+      <text y="58" x="156" font-size="18" fill="#8b949e">drops</text>
+    </g>
+
+    <g transform="translate(1000, 360)">
+      <text font-size="56" font-weight="700" fill="#f85149">6.7k</text>
+      <text y="36" x="130" font-size="18" fill="#8b949e">IPs banned</text>
+      <text y="58" x="130" font-size="18" fill="#8b949e">(CrowdSec)</text>
+    </g>
+  </g>
+
+  <!-- bottom strip: tags -->
+  <g transform="translate(60, 560)" font-size="18" fill="#8b949e">
+    <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>infrastructure-as-code</text>
+  </g>
+
+  <!-- corner marker -->
+  <g transform="translate(1180, 60)" fill="#30363d">
+    <rect width="40" height="40" rx="4"/>
+    <text x="20" y="28" text-anchor="middle" font-size="24" fill="#3fb950" font-weight="700">□</text>
+  </g>
+</svg>
