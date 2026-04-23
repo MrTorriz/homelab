@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Europe/Stockholm
+    commit-message:
+      prefix: ci
+    labels:
+      - dependencies
+      - github-actions
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: docker
+    labels:
+      - dependencies
+      - docker
+    open-pull-requests-limit: 10

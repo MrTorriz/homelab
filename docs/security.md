@@ -19,6 +19,24 @@ Out of scope:
 - Supply-chain attacks on container images (mitigated only by pinning where it matters)
 - Physical access to the host
 
+## STRIDE analysis
+
+The attack surface mapped against [Microsoft's STRIDE model](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats). Each row is a concrete threat, the control that mitigates it, and the residual risk I accept.
+
+| Category | Threat | Mitigation | Residual risk |
+|---|---|---|---|
+| **S**poofing | Attacker impersonates a legitimate user to reach internal services | Cloudflare Access + Google OAuth; single allowlisted identity; hardware-backed 2FA | OAuth account compromise — mitigated by 2FA and session-length limits |
+| **S**poofing | Rogue device on LAN pretends to be a trusted client | SSH key-only; no service trusts LAN-origin without its own auth | LAN intrusion (unlikely without physical access) would grant dashboard visibility, not data access |
+| **T**ampering | Modification of container images or binaries | Images from official sources; Watchtower limited to non-critical services; stateful services pinned | Supply-chain compromise of an upstream registry |
+| **T**ampering | Modification of configs or secrets at rest | `.env` never committed; `${APPDATA_DIR}` owned by non-root where possible; backups verified weekly | Compromise of the host itself bypasses this — the backups are the last line |
+| **R**epudiation | A malicious action inside the stack leaves no trail | journald retains 30d; NPM access logs ship to CrowdSec; SSH logs retained | Single-user host — repudiation is mostly a compliance concern, not operational |
+| **I**nfo disclosure | ISP or passive observer sees DNS queries or torrent traffic | AdGuard Home intercepts all LAN DNS; Mullvad WG with lockdown mode for torrents | Cloudflare terminates TLS — trusted for non-sensitive services only |
+| **I**nfo disclosure | Web service leaks secrets in logs or error pages | Logs capped at 7d for stdout; secrets never passed as CLI args; `.env` mounted read-only | Application-level leaks still possible — reviewed per-service |
+| **D**enial of service | Brute-force against SSH or web logins | fail2ban (SSH); CrowdSec (NPM, reads logs, bans at iptables); Cloudflare absorbs volumetric | Dedicated DDoS against home IP would take the tunnel down but not expose the origin |
+| **D**enial of service | Container or script goes into runaway loop and exhausts resources | `docker_watcher.sh` (systemd) restarts crashlooping containers; cgroup limits where sensible | No global memory/CPU limits on every container — identified gap |
+| **E**levation of privilege | Container escape | `no-new-privileges:true` everywhere; Docker socket accessed via read-only proxy, not raw; `privileged:true` forbidden except Scrutiny (documented) | 0-day in Docker itself — accepted |
+| **E**levation of privilege | User-level compromise escalates to root | SSH key-only, password auth off; sudo requires password; unattended-upgrades patches fast | Phishing of SSH private key — mitigated by passphrase and host isolation |
+
 ## Layers
 
 ### 1. Perimeter
