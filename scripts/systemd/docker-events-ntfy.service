@@ -1,0 +1,21 @@
+[Unit]
+Description=Docker events monitor (start/stop/health -> ntfy)
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/homelab/scripts/monitoring/docker-events-monitor.py
+Restart=on-failure
+RestartSec=10
+User=root
+StandardOutput=journal
+StandardError=journal
+Nice=10
+
+NoNewPrivileges=true
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

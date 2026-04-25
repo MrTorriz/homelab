@@ -1,0 +1,25 @@
+[Unit]
+Description=Suricata alert -> ntfy notification (severity 1-2)
+After=suricata.service docker.service
+Wants=suricata.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/homelab/scripts/monitoring/suricata-monitor.py
+Restart=on-failure
+RestartSec=10
+User=root
+StandardOutput=journal
+StandardError=journal
+Nice=10
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/var/log/suricata
+ReadWritePaths=/var/log/homelab
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
