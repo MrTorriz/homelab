@@ -49,14 +49,10 @@ Single-host homelab on Ubuntu 24.04, ~50 Dockerised services, behind Nginx Proxy
 ## Architecture
 
 <p align="center">
-  <img src="docs/img/architecture.svg" alt="Homelab architecture — perimeter, detection, apps, observability, VPN-bound torrent traffic" width="900"/>
+  <img src="docs/img/architecture.svg" alt="Homelab architecture — Internet → edge perimeter → Docker host → grouped subsystems (detection, apps, observability, VPN tunnel)" width="900"/>
 </p>
 
-The diagram is rendered from [`docs/architecture.d2`](docs/architecture.d2) via [d2lang.com](https://d2lang.com) — same *diagram-as-code* principle as the demo GIFs under `scripts/demo/`. Re-render after edits with:
-
-```bash
-d2 --layout=elk --theme=200 docs/architecture.d2 docs/img/architecture.svg
-```
+Hand-designed SVG (auto-layout from Mermaid/D2 couldn't keep up with the growing stack and stayed visibly machine-generated). Edit [`docs/img/architecture.svg`](docs/img/architecture.svg) directly if the stack changes — the file is ~12 KB, intentionally readable as a text source.
 
 ---
 
