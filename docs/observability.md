@@ -98,7 +98,6 @@ The metrics layer answers "what is happening?". The events layer answers "what *
   <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, Suricata signature, file-watcher" width="780"/>
 </p>
 
-
 The high-signal layer is **seven security event sources** — these are the ones that wake you up in the middle of the night:
 
 | Source | Trigger | Hook | Priority |
