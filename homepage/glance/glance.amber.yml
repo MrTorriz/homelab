@@ -1,0 +1,24 @@
+# ────────────────────────────────────────────────────────────
+# Glance — "Amber" theme variant
+#
+# Warm amber/orange accent on near-black. Iframed into Homepage's
+# FEED tab when the Amber Homepage theme is active. Only the
+# `theme:` block differs from `glance.yml` — see that file for the
+# full pages: definition.
+# ────────────────────────────────────────────────────────────
+
+server:
+  port: 8080
+  assets-path: /app/assets
+
+theme:
+  background-color: 0 0 5
+  contrast-multiplier: 1.15
+  text-saturation-multiplier: 0.6
+  primary-color: 18 63 60
+  positive-color: 95 38 55
+  negative-color: 355 67 65
+  custom-css-file: /assets/custom.css
+
+# pages: see glance.yml — copy or $include the same block here.
+pages: []

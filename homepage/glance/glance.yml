@@ -1,0 +1,240 @@
+# ────────────────────────────────────────────────────────────
+# Glance — base config (default theme)
+#
+# Glance runs as four sibling instances (default + three themes).
+# Each one is iframed into Homepage's FEED tab via custom JS so the
+# active iframe matches the selected Homepage theme.
+#
+# The three themed variants (deepspace / tokyo / amber) only differ
+# in the `theme:` block — they reuse the same `pages:` definition
+# below by inlining it. If you prefer the live setup, split the
+# `pages:` block into a separate `pages.yml` and `$include:` it.
+# ────────────────────────────────────────────────────────────
+
+server:
+  port: 8080
+  assets-path: /app/assets
+
+theme:
+  background-color: 0 0 2
+  contrast-multiplier: 1.15
+  text-saturation-multiplier: 0.5
+  primary-color: 0 0 95
+  positive-color: 142 71 45
+  negative-color: 348 100 60
+  custom-css-file: /assets/custom.css
+
+pages:
+  - name: Tech
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: Europe/Stockholm
+                label: Local
+
+          - type: weather
+            location: Stockholm, Sweden
+            units: metric
+            hour-format: 24h
+
+          - type: reddit
+            title: r/selfhosted
+            subreddit: selfhosted
+            show-thumbnails: false
+            limit: 5
+            collapse-after: 5
+
+          - type: reddit
+            title: r/homelab
+            subreddit: homelab
+            show-thumbnails: false
+            limit: 5
+            collapse-after: 5
+
+      - size: full
+        widgets:
+          - type: rss
+            title: Tech
+            limit: 12
+            collapse-after: 6
+            feeds:
+              - url: https://example.com/rss/tech
+                name: Example Tech
+              - url: https://news.ycombinator.com/rss
+                name: Hacker News
+
+          - type: rss
+            title: Linux & Homelab
+            limit: 10
+            collapse-after: 5
+            feeds:
+              - url: https://example.com/rss/linux
+                name: Example Linux
+
+      - size: small
+        widgets:
+          - type: hacker-news
+            limit: 8
+            collapse-after: 5
+
+          - type: reddit
+            title: r/linux
+            subreddit: linux
+            show-thumbnails: false
+            limit: 5
+            collapse-after: 5
+
+  - name: News
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: Europe/Stockholm
+                label: Local
+
+          - type: weather
+            location: Stockholm, Sweden
+            units: metric
+            hour-format: 24h
+
+          - type: reddit
+            title: r/worldnews
+            subreddit: worldnews
+            show-thumbnails: false
+            limit: 8
+            collapse-after: 8
+
+      - size: full
+        widgets:
+          - type: rss
+            title: World News
+            limit: 15
+            collapse-after: 8
+            feeds:
+              - url: https://feeds.bbci.co.uk/news/world/rss.xml
+                name: BBC World
+
+      - size: small
+        widgets:
+          - type: rss
+            title: Tech News
+            limit: 12
+            collapse-after: 8
+            feeds:
+              - url: https://feeds.bbci.co.uk/news/technology/rss.xml
+                name: BBC Tech
+
+  - name: Finance
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: Europe/Stockholm
+                label: Local
+
+          - type: calendar
+
+      - size: full
+        widgets:
+          - type: rss
+            title: Business & Markets
+            limit: 15
+            collapse-after: 8
+            feeds:
+              - url: https://feeds.bbci.co.uk/news/business/rss.xml
+                name: BBC Business
+
+      - size: small
+        widgets:
+          - type: markets
+            markets:
+              - symbol: ^GSPC
+                name: S&P 500
+              - symbol: ^IXIC
+                name: Nasdaq
+              - symbol: BTC-USD
+                name: Bitcoin
+              - symbol: GC=F
+                name: Gold
+
+  - name: Server
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: Europe/Stockholm
+                label: Local
+
+          - type: monitor
+            cache: 5m
+            title: Services
+            sites:
+              - title: Plex
+                url: http://homelab.local:32400/web
+                icon: si:plex
+              - title: Sonarr
+                url: http://homelab.local:8989
+                icon: si:sonarr
+              - title: Radarr
+                url: http://homelab.local:7878
+                icon: si:radarr
+              - title: AdGuard
+                url: http://homelab.local:3000
+                icon: si:adguard
+              - title: Immich
+                url: http://homelab.local:2283
+                icon: si:immich
+              - title: Portainer
+                url: http://homelab.local:9000
+                icon: si:portainer
+              - title: Homepage
+                url: http://homelab.local:3000
+
+      - size: full
+        widgets:
+          - type: releases
+            title: Container updates
+            collapse-after: 8
+            repositories:
+              - immich-app/immich
+              - linuxserver/docker-sonarr
+              - linuxserver/docker-radarr
+              - linuxserver/docker-bazarr
+              - linuxserver/docker-prowlarr
+              - linuxserver/docker-qbittorrent
+              - linuxserver/docker-plex
+              - gethomepage/homepage
+              - glanceapp/glance
+              - nicolargo/glances
+              - containrrr/watchtower
+
+          - type: releases
+            title: Tools & Security
+            collapse-after: 5
+            repositories:
+              - portainer/portainer
+              - amir20/dozzle
+              - NginxProxyManager/nginx-proxy-manager
+              - HaveAGitGat/Tdarr
+
+      - size: small
+        widgets:
+          - type: bookmarks
+            groups:
+              - title: Docker
+                links:
+                  - title: Docker Hub
+                    url: https://hub.docker.com
+                  - title: LinuxServer.io
+                    url: https://www.linuxserver.io/
+                  - title: Compose Spec
+                    url: https://docs.docker.com/compose/

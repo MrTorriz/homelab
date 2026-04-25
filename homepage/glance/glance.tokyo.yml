@@ -1,0 +1,24 @@
+# ────────────────────────────────────────────────────────────
+# Glance — "Tokyo Night" theme variant
+#
+# Soft purple-blue palette inspired by the Tokyo Night editor theme.
+# Iframed into Homepage's FEED tab when the Tokyo Homepage theme is
+# active. Only the `theme:` block differs from `glance.yml` — see
+# that file for the full pages: definition.
+# ────────────────────────────────────────────────────────────
+
+server:
+  port: 8080
+  assets-path: /app/assets
+
+theme:
+  background-color: 230 17 13
+  contrast-multiplier: 1.10
+  text-saturation-multiplier: 0.7
+  primary-color: 217 89 73
+  positive-color: 158 73 60
+  negative-color: 349 87 73
+  custom-css-file: /assets/custom.css
+
+# pages: see glance.yml — copy or $include the same block here.
+pages: []
