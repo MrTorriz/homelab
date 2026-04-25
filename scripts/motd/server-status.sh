@@ -6,7 +6,7 @@
 # --- DATA ---
 UPTIME_SHORT=$(uptime -p | sed \
     's/up //;s/, [0-9]* minutes\?.*//;s/ days\?/d/;s/ hours\?/h/;s/,//')
-IP=$(hostname -I | awk '{print $1}')
+IP="${HOMELAB_IP:-$(hostname -I | awk '{print $1}')}"
 OS=$(lsb_release -d 2>/dev/null | cut -f2 | awk '{print tolower($0)}')
 TEMP_C="??"
 [ -f /sys/class/thermal/thermal_zone0/temp ] && \
@@ -78,7 +78,7 @@ LAST_BACKUP=$([ -f "$BACKUP_LOG" ] && \
 LAST_USER="${SUDO_USER:-${USER:-$(id -un)}}"
 LAST_RAW=$(LC_TIME=C last -F "$LAST_USER" 2>/dev/null \
     | grep -v "still logged in\|^$\|^wtmp" | head -1)
-LAST_IP=$(echo "$LAST_RAW" | awk '{print $3}')
+LAST_IP="${HOMELAB_LAST_IP:-$(echo "$LAST_RAW" | awk '{print $3}')}"
 LAST_DATE=$(echo "$LAST_RAW" | awk '{printf "%s %s %s", $5, $6, substr($7,1,5)}')
 
 # --- COLORS ---
