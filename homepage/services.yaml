@@ -71,6 +71,40 @@
         href: https://cloud.example.com
         container: nextcloud
         description: Laptop, iPhone & server sync
+    - Grafana:
+        icon: grafana.png
+        href: https://grafana.example.com/d/homelab-overview
+        container: grafana
+        description: Server stats & energy
+        widget:
+          type: customapi
+          url: http://prometheus:9090/api/v1/query?query=label_replace%28%28scaph_host_power_microwatts%2F1000000%29%2Bon%28%29group_left%28%29nvidia_smi_power_draw_watts%2C%22k%22%2C%22total%22%2C%22%22%2C%22%22%29%20or%20label_replace%28scaph_host_power_microwatts%2F1000000%2C%22k%22%2C%22cpu%22%2C%22%22%2C%22%22%29%20or%20label_replace%28nvidia_smi_power_draw_watts%2C%22k%22%2C%22gpu%22%2C%22%22%2C%22%22%29
+          refreshInterval: 30000
+          mappings:
+            - field:
+                data:
+                  result:
+                    "0":
+                      value: "1"
+              label: Total
+              suffix: " W"
+              format: float
+            - field:
+                data:
+                  result:
+                    "1":
+                      value: "1"
+              label: CPU
+              suffix: " W"
+              format: float
+            - field:
+                data:
+                  result:
+                    "2":
+                      value: "1"
+              label: GPU
+              suffix: " W"
+              format: float
     - Scrutiny:
         icon: scrutiny.png
         href: https://scrutiny.example.com
