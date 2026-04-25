@@ -7,7 +7,7 @@ they get rsync'd into the live appdata tree.
 
 ## Layout
 
-```
+```text
 monitoring/
 ├── prometheus.yml.example                 → ${APPDATA_DIR}/prometheus/config/prometheus.yml
 ├── grafana/
