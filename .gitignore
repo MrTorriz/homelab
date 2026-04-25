@@ -14,16 +14,16 @@ backups/
 .idea/
 .vscode/
 
-# Lokal kontextfil för Claude Code — ska aldrig pushas
+# Local context file — never pushed
 CLAUDE.md
 
-# Lokal arbetsjournal (skrivs av /homelab-skill) — ska aldrig pushas
+# Local working journal — never pushed
 JOURNAL.md
 
-# Lokal referensfil — skills/plugins vi använder i sessionen, ska aldrig pushas
+# Local tooling reference — never pushed
 TOOLS.md
 
-# Playwright MCP debug artifacts (console logs, page snapshots)
+# Playwright artifacts (console logs, page snapshots)
 .playwright-mcp/
 
 # Personal sanitisation patterns — read by scripts/sanitize-check.sh
