@@ -10,6 +10,20 @@ Small bash utilities that keep the homelab honest. All source `lib.sh` for share
 | `mullvad-rotate.sh` | Rotate Mullvad exit IP through a country list | every 6 hours |
 | `lib.sh` | Shared functions (`ntfy_send`, `ntfy_url`, `log_rotate`) | sourced |
 
+## What it looks like
+
+`deploy.sh` only touches services whose source files actually changed — and only reloads the ones that need it:
+
+<p align="center">
+  <img src="../docs/img/deploy.gif" alt="deploy.sh idempotent rsync flow with conditional reloads" width="780"/>
+</p>
+
+`healthcheck.sh` is the periodic safety net — if anything is unhealthy, ntfy fires:
+
+<p align="center">
+  <img src="../docs/img/healthcheck.gif" alt="healthcheck.sh verifying containers, VPN, DNS, disk thresholds" width="780"/>
+</p>
+
 ## Subdirectories
 
 Heavier automation lives one level deeper, grouped by intent:

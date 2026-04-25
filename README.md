@@ -30,6 +30,11 @@
   <img src="docs/img/homepage.gif" alt="Homepage dashboard — themes &amp; live service status" width="780"/>
 </p>
 
+<p align="center">
+  <em>What SSH login looks like — live system snapshot, no extra commands needed:</em><br/>
+  <img src="docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
+</p>
+
 Single-host homelab on Ubuntu 24.04, ~35 Dockerised services, behind Nginx Proxy Manager and a Cloudflare Tunnel for external access. Everything is reproducible from this repo: clone, set `.env`, `docker compose up -d`.
 
 - **Defense-in-depth:** UFW default-deny, Suricata IDS (passive monitoring), fail2ban (SSH brute-force), SSH key-only on a non-default port, `no-new-privileges` on every container, Docker socket proxy, VPN-bound torrent traffic with killswitch.

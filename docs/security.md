@@ -49,6 +49,12 @@ The attack surface mapped against [Microsoft's STRIDE model](https://learn.micro
 | DNS | AdGuard Home on the host — ISP DNS bypassed entirely |
 | VPN egress (selective) | Mullvad WireGuard with lockdown mode for torrent client |
 
+The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` proves torrent egress goes through Mullvad while host traffic uses the ISP gateway:
+
+<p align="center">
+  <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh comparing qBittorrent egress IP vs host egress IP" width="780"/>
+</p>
+
 ### 2. Network
 
 | Control | Implementation |
@@ -106,6 +112,10 @@ UFW stops what shouldn't get in. fail2ban stops what's hammering known login sur
 **How alerts surface.** Suricata writes `fast.log` (compact one-line alerts) and `eve.json` (full structured event log) under `/var/log/suricata`. A small Python service (`suricata-ntfy.service`, hardened with `NoNewPrivileges`, `ProtectSystem=strict`, read-only `${APPDATA_DIR}`) tails `fast.log`, filters to severity 1–2, dedupes, and pushes notifications to ntfy. By the time an attention-worthy event reaches the phone, it's already been triaged out of the firehose.
 
 **Honest limits.** TLS-encrypted traffic is opaque — Suricata sees the SNI, JA3 fingerprint, certificate, and timing, but not the payload. That's enough to flag "this device is talking to a known C2 hostname" but not enough to read what's said. Inline blocking is deliberately off; the trade-off is that Suricata detects, fail2ban and UFW respond. For a single-host LAN this split (perimeter / brute-force / behavioural) is enough; an enterprise would add NDR and SIEM correlation on top.
+
+<p align="center">
+  <img src="img/alerting.gif" alt="fail2ban status + Suricata fast.log tail with realistic IDS alerts" width="780"/>
+</p>
 
 ## Event-driven alerting
 
