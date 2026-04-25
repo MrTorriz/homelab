@@ -27,37 +27,37 @@
 
   <!-- tagline -->
   <text x="60" y="250" font-size="26" fill="#8b949e">
-    Self-hosted infrastructure as code · Ubuntu 24.04 · ~30 Docker services
+    Self-hosted infrastructure as code · Ubuntu 24.04 · ~50 Docker services
   </text>
 
   <!-- accent line -->
   <rect x="60" y="285" width="180" height="4" fill="url(#accent)" rx="2"/>
 
-  <!-- metrics grid -->
-  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
-    <!-- row 1 -->
-    <g transform="translate(60, 360)">
+  <!-- metrics grid — 4 stat cards, each centered in a 290 px column,
+       column centers at x = 205, 495, 785, 1075 (60 px margin both sides) -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" text-anchor="middle">
+    <g transform="translate(205, 360)">
       <text font-size="56" font-weight="700" fill="#3fb950">0</text>
-      <text y="36" x="88" font-size="18" fill="#8b949e">open inbound</text>
-      <text y="58" x="88" font-size="18" fill="#8b949e">ports</text>
+      <text y="36" font-size="18" fill="#8b949e">open inbound</text>
+      <text y="58" font-size="18" fill="#8b949e">ports</text>
     </g>
 
-    <g transform="translate(340, 360)">
-      <text font-size="56" font-weight="700" fill="#2f81f7">~30</text>
-      <text y="36" x="128" font-size="18" fill="#8b949e">containerised</text>
-      <text y="58" x="128" font-size="18" fill="#8b949e">services</text>
+    <g transform="translate(495, 360)">
+      <text font-size="56" font-weight="700" fill="#2f81f7">~50</text>
+      <text y="36" font-size="18" fill="#8b949e">containerised</text>
+      <text y="58" font-size="18" fill="#8b949e">services</text>
     </g>
 
-    <g transform="translate(680, 360)">
+    <g transform="translate(785, 360)">
       <text font-size="56" font-weight="700" fill="#e3b341">22k+</text>
-      <text y="36" x="156" font-size="18" fill="#8b949e">weekly UFW</text>
-      <text y="58" x="156" font-size="18" fill="#8b949e">drops</text>
+      <text y="36" font-size="18" fill="#8b949e">weekly UFW</text>
+      <text y="58" font-size="18" fill="#8b949e">drops</text>
     </g>
 
-    <g transform="translate(1000, 360)">
+    <g transform="translate(1075, 360)">
       <text font-size="56" font-weight="700" fill="#f85149">0</text>
-      <text y="36" x="130" font-size="18" fill="#8b949e">SSH brute</text>
-      <text y="58" x="130" font-size="18" fill="#8b949e">(key-only :2222)</text>
+      <text y="36" font-size="18" fill="#8b949e">SSH brute</text>
+      <text y="58" font-size="18" fill="#8b949e">(key-only)</text>
     </g>
   </g>
 
