@@ -66,9 +66,4 @@
     <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>infrastructure-as-code</text>
   </g>
 
-  <!-- corner marker -->
-  <g transform="translate(1180, 60)" fill="#30363d">
-    <rect width="40" height="40" rx="4"/>
-    <text x="20" y="28" text-anchor="middle" font-size="24" fill="#3fb950" font-weight="700">□</text>
-  </g>
 </svg>
