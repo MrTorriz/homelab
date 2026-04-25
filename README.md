@@ -125,7 +125,7 @@ Full per-service catalogue: [`docker/README.md`](docker/README.md)
   <tr>
     <td width="50%" align="center">
       <img src="docs/img/homepage.gif" alt="Homepage dashboard with themed feeds and live service status" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>Homepage</b> — themed dashboards, live service status, *arr stack tile row</sub>
+      <sub><b>Homepage</b> — themed dashboards · live tiles · *arr stack</sub>
     </td>
     <td width="50%" align="center">
       <img src="docs/img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard, twelve panels covering power, energy, cost, capacity" width="100%" style="width:100%; height:auto"/><br/>
