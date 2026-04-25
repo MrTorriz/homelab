@@ -17,11 +17,6 @@
   <rect width="1280" height="640" fill="url(#bg)"/>
   <rect width="1280" height="640" fill="url(#grid)" opacity="0.5"/>
 
-  <!-- top strip: prompt -->
-  <text x="60" y="72" font-size="22" fill="#7d8590">
-    <tspan fill="#3fb950">user</tspan><tspan fill="#7d8590">@</tspan><tspan fill="#2f81f7">homelab</tspan><tspan fill="#7d8590">:~$</tspan> <tspan fill="#e6edf3">cat README.md</tspan>
-  </text>
-
   <!-- title -->
   <text x="60" y="200" font-size="96" font-weight="700" fill="#e6edf3" letter-spacing="-2">Homelab</text>
 
