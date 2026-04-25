@@ -70,7 +70,7 @@
         icon: nextcloud.png
         href: https://cloud.example.com
         container: nextcloud
-        description: Files, calendar & contacts
+        description: Laptop, iPhone & server sync
     - Scrutiny:
         icon: scrutiny.png
         href: https://scrutiny.example.com
