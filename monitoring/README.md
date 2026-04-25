@@ -5,6 +5,14 @@ cadvisor) running as containers in `docker/compose.yml`. This directory
 holds **example configs and the provisioned dashboard** — at deploy time
 they get rsync'd into the live appdata tree.
 
+<p align="center">
+  <img src="../docs/img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard with twelve panels: total/CPU/GPU power, GPU temperature, power-draw timeseries, 24 h kWh + cost, uptime, CPU, memory, disk, network" width="900"/>
+</p>
+
+> The screenshot is taken from an ephemeral demo stack (see [`demo/`](demo/))
+> with synthetic metrics — never live data. Same dashboard JSON, fabricated
+> values, English locale forced.
+
 ## Layout
 
 ```text
