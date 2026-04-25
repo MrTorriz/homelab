@@ -1,0 +1,19 @@
+[Unit]
+Description=Docker container crash watcher (die/oom -> ntfy)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=homelab
+ExecStart=/opt/homelab/scripts/monitoring/docker-watcher.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
