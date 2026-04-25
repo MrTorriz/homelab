@@ -47,42 +47,15 @@ Single-host homelab on Ubuntu 24.04, ~35 Dockerised services, behind Nginx Proxy
 
 ## Architecture
 
-![Architecture](docs/img/architecture.png)
+<p align="center">
+  <img src="docs/img/architecture.svg" alt="Homelab architecture — perimeter, detection, apps, observability, VPN-bound torrent traffic" width="900"/>
+</p>
 
-<details>
-<summary>Interactive Mermaid source</summary>
+The diagram is rendered from [`docs/architecture.mmd`](docs/architecture.mmd) via `mmdc` (Mermaid CLI) — same *diagram-as-code* principle as the demo GIFs under `scripts/demo/`. Re-render after edits with:
 
-```mermaid
-flowchart LR
-    Internet([Internet])
-    CF[Cloudflare Tunnel<br/>+ OAuth]
-    subgraph LAN[Home LAN 192.168.x.0/24]
-        Router[Router / Gateway]
-        AdGuard[AdGuard Home<br/>DNS]
-        subgraph Host[Docker Host – Ubuntu 24.04]
-            NPM[Nginx Proxy Manager<br/>:80/:443]
-            Suri[Suricata IDS<br/>passive monitoring]
-            F2B[fail2ban<br/>SSH brute-force]
-            Apps[Media · Photos · Files<br/>AI · Dashboards · Tools]
-            Obs[Glances · Scrutiny<br/>Speedtest · ntfy]
-            VPN((Mullvad WG))
-            QB[qBittorrent<br/>killswitch]
-        end
-    end
-
-    Internet -->|HTTPS| CF
-    CF -->|tunnel| NPM
-    Internet -->|DNS / WAN| Router
-    Router --> AdGuard
-    AdGuard --> NPM
-    NPM --> Apps
-    NPM --> Obs
-    Suri -.->|alerts| Obs
-    F2B -.->|bans| NPM
-    QB -->|only via| VPN --> Internet
+```bash
+mmdc -i docs/architecture.mmd -o docs/img/architecture.svg -b "#0d0d0d" -w 1600
 ```
-
-</details>
 
 ---
 
