@@ -119,28 +119,37 @@ Full per-service catalogue: [`docker/README.md`](docker/README.md)
 
 ## Showcase
 
+### Dashboards
+
 <table>
   <tr>
     <td width="50%" align="center">
       <img src="docs/img/homepage.gif" alt="Homepage dashboard with themed feeds and live service status" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>Homepage</b> — themed dashboards & live service status</sub>
+      <sub><b>Homepage</b> — themed dashboards, live service status, *arr stack tile row</sub>
     </td>
     <td width="50%" align="center">
       <img src="docs/img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard, twelve panels covering power, energy, cost, capacity" width="100%" style="width:100%; height:auto"/><br/>
       <sub><b>Grafana</b> — power, energy, cost, capacity</sub>
     </td>
   </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="docs/img/deploy.gif" alt="deploy.sh idempotent rsync flow with conditional service reloads" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>deploy.sh</b> — idempotent rsync with conditional reloads</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, Suricata signature" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>ntfy</b> — event-driven push alerts to phone</sub>
-    </td>
-  </tr>
 </table>
+
+### Tooling demos
+
+<p align="center">
+  <table width="75%" align="center">
+    <tr>
+      <td width="50%" align="center">
+        <img src="docs/img/deploy.gif" alt="deploy.sh idempotent rsync flow with conditional service reloads" width="100%" style="width:100%; height:auto"/><br/>
+        <sub><b>deploy.sh</b> — idempotent rsync with conditional reloads</sub>
+      </td>
+      <td width="50%" align="center">
+        <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, Suricata signature" width="100%" style="width:100%; height:auto"/><br/>
+        <sub><b>ntfy</b> — event-driven push alerts to phone</sub>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
 
