@@ -12,14 +12,14 @@ red()    { printf '\033[31m%s\033[0m' "$1"; }
 dim()    { printf '\033[2m%s\033[0m'  "$1"; }
 bold()   { printf '\033[1m%s\033[0m'  "$1"; }
 
-VPN_IP="185.213.155.74"
-WAN_IP="62.23.45.118"
+VPN_IP="203.0.113.42"   # RFC5737 documentation prefix
+WAN_IP="198.51.100.17"  # RFC5737 documentation prefix
 
 printf '%s\n' "$(dim '# qbittorrent egress (must be VPN exit)')"
 printf '%s ' "$(bold '$')"
 printf '%s\n' 'docker exec qbittorrent curl -s ifconfig.me'
 sleep 0.6
-printf '%s   %s\n\n' "$(green "$VPN_IP")" "$(dim '← Mullvad (se-mma-wg-001)')"
+printf '%s   %s\n\n' "$(green "$VPN_IP")" "$(dim '← mullvad-exit')"
 sleep 0.5
 
 printf '%s\n' "$(dim '# host egress (home WAN, ISP)')"

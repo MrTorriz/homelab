@@ -1,0 +1,18 @@
+# .sanitize-patterns.example — copy to .sanitize-patterns (gitignored)
+# and replace placeholders with your real personal identifiers.
+#
+# scripts/sanitize-check.sh reads this file line-by-line and fails the
+# pre-commit hook if any tracked file matches a non-comment line.
+#
+# One ERE pattern per line. Empty lines and # comments are ignored.
+# Plain literals work — they don't have to be valid regex if they
+# contain no regex metacharacters. Escape dots in IPs (\.).
+#
+# Examples (REPLACE before use):
+#
+# your-real-name
+# 192\.168\.42
+# /home/operator-username
+# /mnt/personal-mount
+# personal-email-prefix
+# yourdomain\.com

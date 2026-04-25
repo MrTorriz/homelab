@@ -60,25 +60,3 @@ jobs:
         run: |
           cp .env.example .env
           docker compose config -q
-
-  sanitize-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Fail on personal identifiers
-        run: |
-          # Patterns assembled at runtime so this workflow does not match itself.
-          P1='martin-karls''son'
-          P2='192\.168\.10'
-          P3='/home/mser''ver'
-          P4='/mnt/p''lex'
-          P5='realmartin''karlsson'
-          PATTERNS="$P1|$P2|$P3|$P4|$P5"
-          if grep -rEnH \
-               --exclude-dir=.git \
-               --exclude-dir=node_modules \
-               -- "$PATTERNS" . ; then
-            echo "::error::Sanitisation check failed — personal identifiers detected above."
-            exit 1
-          fi
-          echo "Sanitisation check passed — no personal identifiers found."

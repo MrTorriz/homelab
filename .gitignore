@@ -25,3 +25,7 @@ TOOLS.md
 
 # Playwright MCP debug artifacts (console logs, page snapshots)
 .playwright-mcp/
+
+# Personal sanitisation patterns — read by scripts/sanitize-check.sh
+# .sanitize-patterns.example is committed as a template
+.sanitize-patterns
