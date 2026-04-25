@@ -2,6 +2,10 @@
 
 [Homepage](https://gethomepage.dev) is the entry-point dashboard. Service tiles are auto-populated from the running Docker containers (via the read-only `docker-socket-proxy`).
 
+<p align="center">
+  <img src="../docs/img/homepage.gif" alt="Homepage dashboard — themed feeds + live service status" width="780"/>
+</p>
+
 ## Files
 
 | File | Purpose |

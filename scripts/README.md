@@ -38,6 +38,12 @@ Heavier automation lives one level deeper, grouped by intent:
 
 Each subdirectory holds standalone scripts that source `../lib.sh`. Read the header comment at the top of any script for required env vars.
 
+`motd/server-status.sh` is what every SSH login lands on — a live snapshot of containers, load, temps and disk so you don't need a second command to see if the box is happy:
+
+<p align="center">
+  <img src="../docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
+</p>
+
 The full schedule that ties these together lives in [`crontab.example`](crontab.example).
 
 ## Conventions
