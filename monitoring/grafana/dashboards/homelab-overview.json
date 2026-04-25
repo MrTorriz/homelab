@@ -60,11 +60,11 @@
       "fieldConfig": {"defaults": {"unit": "kwatth", "decimals": 3}}
     },
     {
-      "id": 7, "type": "stat", "title": "Energy cost 24h",
-      "description": "Multiplies kWh by the $ELECTRICITY_PRICE dashboard variable (default 2.0).",
+      "id": 7, "type": "stat", "title": "Energy cost 24h (per $ELECTRICITY_PRICE)",
+      "description": "Multiplies kWh by the $ELECTRICITY_PRICE dashboard variable (default 2.0). Unit is deliberately none — Grafana's currency formatting picks one symbol globally; the panel title carries the unit instead so any local currency works.",
       "gridPos": {"x": 8, "y": 12, "w": 8, "h": 4},
       "targets": [{"expr": "sum_over_time(((scaph_host_power_microwatts / 1000000) + nvidia_smi_power_draw_watts)[24h:1m]) / 60 / 1000 * $ELECTRICITY_PRICE", "refId": "A"}],
-      "fieldConfig": {"defaults": {"unit": "currencyEUR", "decimals": 2}}
+      "fieldConfig": {"defaults": {"unit": "none", "decimals": 2}}
     },
     {
       "id": 8, "type": "stat", "title": "Uptime",
