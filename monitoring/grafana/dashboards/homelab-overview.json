@@ -1,0 +1,111 @@
+{
+  "title": "Homelab — Overview",
+  "tags": ["homelab"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "templating": {
+    "list": [
+      {
+        "name": "ELECTRICITY_PRICE",
+        "label": "Electricity price (currency / kWh)",
+        "type": "constant",
+        "current": {"value": "2.0", "text": "2.0"},
+        "query": "2.0",
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Power — Total (CPU+GPU)",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "(scaph_host_power_microwatts / 1000000) + nvidia_smi_power_draw_watts", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "watt", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 150}, {"color": "red", "value": 250}]}}}
+    },
+    {
+      "id": 2, "type": "stat", "title": "Power — CPU+RAM",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "scaph_host_power_microwatts / 1000000", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "watt", "color": {"mode": "palette-classic"}}}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Power — GPU",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "nvidia_smi_power_draw_watts", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "watt", "color": {"mode": "palette-classic"}}}
+    },
+    {
+      "id": 4, "type": "stat", "title": "GPU temperature",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "nvidia_smi_temperature_gpu", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "celsius", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Power draw over time",
+      "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
+      "targets": [
+        {"expr": "scaph_host_power_microwatts / 1000000", "refId": "A", "legendFormat": "CPU+RAM"},
+        {"expr": "nvidia_smi_power_draw_watts", "refId": "B", "legendFormat": "GPU"},
+        {"expr": "(scaph_host_power_microwatts / 1000000) + nvidia_smi_power_draw_watts", "refId": "C", "legendFormat": "Total"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "watt"}}
+    },
+    {
+      "id": 6, "type": "stat", "title": "Energy last 24h (kWh)",
+      "gridPos": {"x": 0, "y": 12, "w": 8, "h": 4},
+      "targets": [{"expr": "sum_over_time(((scaph_host_power_microwatts / 1000000) + nvidia_smi_power_draw_watts)[24h:1m]) / 60 / 1000", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "kwatth", "decimals": 3}}
+    },
+    {
+      "id": 7, "type": "stat", "title": "Energy cost 24h",
+      "description": "Multiplies kWh by the $ELECTRICITY_PRICE dashboard variable (default 2.0).",
+      "gridPos": {"x": 8, "y": 12, "w": 8, "h": 4},
+      "targets": [{"expr": "sum_over_time(((scaph_host_power_microwatts / 1000000) + nvidia_smi_power_draw_watts)[24h:1m]) / 60 / 1000 * $ELECTRICITY_PRICE", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currencyEUR", "decimals": 2}}
+    },
+    {
+      "id": 8, "type": "stat", "title": "Uptime",
+      "gridPos": {"x": 16, "y": 12, "w": 8, "h": 4},
+      "targets": [{"expr": "time() - node_boot_time_seconds", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "CPU usage",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+      "targets": [{"expr": "100 - (avg by (mode) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A", "legendFormat": "CPU %"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "max": 100}}
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Memory",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "refId": "A", "legendFormat": "Used"},
+        {"expr": "node_memory_MemAvailable_bytes", "refId": "B", "legendFormat": "Available"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Disk usage",
+      "description": "node-exporter sees the host filesystem under /rootfs; adjust mountpoints to match your STORAGE_DIR / MEDIA_DIR.",
+      "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "node_filesystem_size_bytes{mountpoint=\"/rootfs\"} - node_filesystem_avail_bytes{mountpoint=\"/rootfs\"}", "refId": "A", "legendFormat": "/ used"},
+        {"expr": "node_filesystem_size_bytes{mountpoint=\"/rootfs/storage\"} - node_filesystem_avail_bytes{mountpoint=\"/rootfs/storage\"}", "refId": "B", "legendFormat": "/storage used"},
+        {"expr": "node_filesystem_size_bytes{mountpoint=\"/rootfs/media\"} - node_filesystem_avail_bytes{mountpoint=\"/rootfs/media\"}", "refId": "C", "legendFormat": "/media used"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "bytes"}}
+    },
+    {
+      "id": 12, "type": "timeseries", "title": "Network (per interface)",
+      "gridPos": {"x": 12, "y": 24, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "rate(node_network_receive_bytes_total{device!~\"lo|veth.*|docker.*|br-.*\"}[5m])", "refId": "A", "legendFormat": "{{device}} in"},
+        {"expr": "rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|docker.*|br-.*\"}[5m])", "refId": "B", "legendFormat": "{{device}} out"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "Bps"}}
+    }
+  ]
+}
