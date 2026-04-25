@@ -77,6 +77,10 @@
 #   suricata-ntfy.service        monitoring/suricata-monitor.py
 #       reads Suricata eve.json and pushes severity-1/2 alerts
 #
+#   file-watcher.service         security/file-watcher.sh
+#       inotify on authorized_keys, sudoers, cron, systemd units →
+#       ntfy on modify/create/delete/move (ATTRIB filtered out)
+#
 # ─── PAM HOOKS (NOT CRON) ────────────────────────────────────────────────────
 # Triggered by pam_exec.so on session open — wire into /etc/pam.d/:
 #

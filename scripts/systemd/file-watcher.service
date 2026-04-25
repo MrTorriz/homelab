@@ -1,0 +1,23 @@
+[Unit]
+Description=Critical file change watcher (inotify -> ntfy)
+After=network.target
+
+[Service]
+Type=simple
+# Adjust the path to match where this repo's scripts/ are installed.
+# Common deploy targets: /opt/homelab/scripts/security/file-watcher.sh
+ExecStart=/opt/homelab/scripts/security/file-watcher.sh
+Restart=on-failure
+RestartSec=10
+User=root
+StandardOutput=journal
+StandardError=journal
+Nice=15
+
+# Hardening — the watcher only needs read access to the host filesystem.
+NoNewPrivileges=true
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

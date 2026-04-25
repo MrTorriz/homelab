@@ -15,7 +15,17 @@ ntfy_url() {
 
 ntfy_send() {
   local title=$1 body=$2 prio=${3:-default} tags=${4:-}
-  curl -sf -X POST "$(ntfy_url)" \
+  # Optional Bearer token. Look in env first, then fall back to ~/scripts/.env.
+  # If neither is set, send unauthenticated — public ntfy topics still work.
+  local token="${NTFY_TOKEN:-}"
+  if [[ -z "$token" && -f "$HOME/scripts/.env" ]]; then
+    token=$(grep -E "^NTFY_TOKEN=" "$HOME/scripts/.env" 2>/dev/null \
+            | cut -d= -f2- | tr -d "'\"")
+  fi
+  local auth=()
+  [[ -n "$token" ]] && auth=(-H "Authorization: Bearer $token")
+  curl -sf --max-time 10 -X POST "$(ntfy_url)" \
+    "${auth[@]}" \
     -H "Title: $title" \
     -H "Priority: $prio" \
     -H "Tags: $tags" \
