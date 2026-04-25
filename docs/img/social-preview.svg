@@ -19,7 +19,7 @@
 
   <!-- top strip: prompt -->
   <text x="60" y="72" font-size="22" fill="#7d8590">
-    <tspan fill="#3fb950">mserver</tspan><tspan fill="#7d8590">@</tspan><tspan fill="#2f81f7">homelab</tspan><tspan fill="#7d8590">:~$</tspan> <tspan fill="#e6edf3">cat README.md</tspan>
+    <tspan fill="#3fb950">user</tspan><tspan fill="#7d8590">@</tspan><tspan fill="#2f81f7">homelab</tspan><tspan fill="#7d8590">:~$</tspan> <tspan fill="#e6edf3">cat README.md</tspan>
   </text>
 
   <!-- title -->
@@ -55,9 +55,9 @@
     </g>
 
     <g transform="translate(1000, 360)">
-      <text font-size="56" font-weight="700" fill="#f85149">6.7k</text>
-      <text y="36" x="130" font-size="18" fill="#8b949e">IPs banned</text>
-      <text y="58" x="130" font-size="18" fill="#8b949e">(CrowdSec)</text>
+      <text font-size="56" font-weight="700" fill="#f85149">0</text>
+      <text y="36" x="130" font-size="18" fill="#8b949e">SSH brute</text>
+      <text y="58" x="130" font-size="18" fill="#8b949e">(key-only :2222)</text>
     </g>
   </g>
 

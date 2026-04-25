@@ -61,16 +61,38 @@ If this ever needs trends-over-time, Prometheus is easy to add later.
 
 Borg/restic give deduplication and retention. For `${APPDATA_DIR}` (~few GB), dedup doesn't matter. For `${MEDIA_DIR}` (TBs of replaceable content), backup is unnecessary. The off-site copy is photos and irreplaceable documents only.
 
+## Network IDS: Suricata over CrowdSec
+
+CrowdSec ran here for a stretch and did its job. The reason it left isn't that it was bad — it's that for a single-host setup, the value-to-overhead ratio drifted the wrong way.
+
+CrowdSec is, at heart, a *behavioural log parser plus a community blocklist plus a bouncer*. Most of its strength comes from the community signal feedback loop, which matters more when you have many sensors contributing and many endpoints consuming. With one host, you're mostly running the agent, the local API, the bouncer, and a parser pipeline so a small stream of NPM and SSH events can produce IP bans — and `fail2ban` already produces those bans against the same logs with a fraction of the moving parts.
+
+What was actually missing wasn't more brute-force defence, it was *visibility* into post-perimeter behaviour: lateral LAN traffic, suspicious DNS, exploit signatures, malware C2 patterns. That's what Suricata gives, and CrowdSec doesn't. So the swap was:
+
+- `fail2ban` keeps the brute-force role (SSH, NPM access logs, anything log-based)
+- `Suricata` takes over the "something hostile is happening on the network" role, in passive mode on the LAN interface
+- The simpler stack — one log-based banner + one network-based detector — is easier to reason about than three overlapping systems
+
+CrowdSec is still the right answer if you have a fleet contributing to and consuming the community blocklist, or if you specifically want managed bouncers across multiple hosts. For one host where the perimeter is already covered, splitting the role made the design smaller and the alerting clearer.
+
 ## What got removed and why
 
 These services were tried and dropped:
 
 | Service | Reason removed |
 |---|---|
-| Nextcloud | Photos moved to Immich (better mobile sync); documents moved to a simpler setup. Nextcloud's complexity wasn't earning its keep. |
 | Authentik | Cloudflare Access + per-app auth is sufficient for a single user. Authentik was a service to maintain for a problem we didn't have. |
 | Paperless-ngx | OCR pipeline was used twice in six months. Not worth the running cost. |
 | GNS3 | Lab work moved to a dedicated workstation. |
+| CrowdSec | Replaced by `fail2ban` for brute-force and Suricata for behavioural network detection — see the section above. |
+
+## Nextcloud, second time around
+
+Nextcloud was removed earlier in the project's life ("photos moved to Immich, documents to a simpler setup"). It's back. The pull factor was that the simpler setup never gave full WebDAV plus calendar plus contacts plus cross-device sync from a single source, and stitching those together piecemeal was more friction than just running Nextcloud properly.
+
+It now sits behind NPM at `nextcloud.${DOMAIN}`, pinned to a Postgres 16 instance and a dedicated Redis 7 isolated to the Nextcloud network so the rest of the stack can't see them. Bulk storage lives on the HDD as External Storage under `${STORAGE_DIR}/Nextcloud/{laptop,phone,server}` so the NVMe stays for hot config only. 2FA is enabled, the admin account is unique to this service, and trusted-domain handling is locked to the proxied hostname.
+
+**The trade-off, named:** Nextcloud brings real operational complexity — a Postgres to back up, a Redis to keep healthy, an upgrade path that requires care, and a permission model that's easy to misconfigure. The reason it earns that complexity now where it didn't before is the *combined* feature set (files + calendar + contacts + WebDAV) rather than any single piece. Immich still owns photos because it's better at it; Nextcloud owns the rest.
 
 ## Future directions
 
