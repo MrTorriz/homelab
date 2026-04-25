@@ -27,7 +27,7 @@
 ## TL;DR
 
 <p align="center">
-  <img src="docs/img/healthcheck.gif" alt="Healthcheck + VPN killswitch demo" width="780"/>
+  <img src="docs/img/homepage.gif" alt="Homepage dashboard — themes &amp; live service status" width="780"/>
 </p>
 
 Single-host homelab on Ubuntu 24.04, ~30 Dockerised services, behind Nginx Proxy Manager and a Cloudflare Tunnel for external access. Everything is reproducible from this repo: clone, set `.env`, `docker compose up -d`.
