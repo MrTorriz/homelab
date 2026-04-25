@@ -13,14 +13,14 @@ All figures are annualised. Currency is **SEK** (swap to your local equivalent �
 | Category | SEK / year | Notes |
 |---|---:|---|
 | Electricity | ~2 000 | 24/7 idle ~85 W, with bursts to 200 W during transcoding/ML |
-| Internet | ~6 000 | 5G fixed wireless, included in household line |
+| Internet | ~3 000 | 5G fixed wireless at ~250 SEK/mo, shared with household |
 | VPN (Mullvad) | ~720 | €5/mo flat, no logs, multi-hop |
 | Domain (.com) | ~140 | One domain, registrar pricing |
 | Cloudflare Tunnel | 0 | Free tier covers personal use |
-| Hardware depreciation | ~3 000 | ~15 000 SEK rig, 5-year linear |
-| **Total** | **~12 000** | ~1 000 SEK/month |
+| Hardware (illustrative) | ~3 000 | Equivalent fresh-build amortised 5 yr — this rig is a sunk cost, see below |
+| **Total** | **~9 000** | ~750 SEK/month |
 
-The internet line is the largest cost — but it is shared with the household, so the **marginal** cost of running the homelab is closer to **~6 000 SEK/year (~500/month)**.
+The marginal cost of running the homelab — once you exclude internet (already paid by the household) and hardware (a repurposed desktop, no fresh capital outlay) — is **~3 000 SEK/year (~250/month)**. That's the relevant number if you already have a working PC and an internet line.
 
 ---
 
@@ -53,10 +53,10 @@ Real cost moves with spot prices. During cold winter spikes this doubles; in sum
 
 5G fixed wireless via the gateway in [`docs/architecture.md`](architecture.md). The line carries the entire household — Plex remote streaming, all WAN traffic, family devices.
 
-- Subscription: **~500 SEK/month**
+- Subscription: **~250 SEK/month** (~3 000 SEK/year)
 - Marginal cost attributed to homelab: hard to isolate, but Plex remote streaming + offsite backup pushes ≥ 100 GB/month
 
-A dedicated fibre line for the homelab alone would be wasteful. Sharing the household line is the right call here.
+A dedicated fibre line for the homelab alone would be wasteful. Sharing the household line is the right call here — and means the realistic cost line for the homelab itself excludes this row.
 
 ---
 
@@ -78,12 +78,14 @@ The deliberately-zero column matters: the architecture in this repo trades **com
 
 ## Hardware depreciation
 
-Linear 5-year depreciation on the rig described in `docs/hardware.md`:
+The honest accounting here: the rig is a **repurposed desktop** that was already in service for years before the homelab role landed on it (see [`hardware.md`](hardware.md) for the framing). Treating it as a fresh ~15 000 SEK capital expense to be straight-line depreciated over five years would overstate the actual cost — that capital was written off long ago through normal use.
 
-- Build cost: **~15 000 SEK** (CPU + board + RAM + GPU + 2× 4 TB HDDs + NVMe)
-- Annual: **~3 000 SEK**
+Two ways to read this row in the TL;DR:
 
-After year 5 this drops to zero on paper, but realistically the GPU and disks become the limiting factors first — they get rotated, not the whole rig.
+- **Sunk cost (this rig, today):** **~0 SEK/year** capital cost. What's real is the recurring replacement cycle: spinning rust gets rotated every ~4 years (~750 SEK/year amortised across two HDDs), GPU runs until it dies, NVMe is wear-tracked.
+- **Equivalent fresh build:** **~3 000 SEK/year** if you sourced parts new today (~15 000 SEK total, 5-year linear) — that's the figure in the TL;DR, kept as a reference number for anyone planning a comparable build from scratch.
+
+Pick whichever framing fits your situation. The marginal-cost number (~3 000 SEK/year) uses the sunk-cost reading because that's what describes this specific homelab.
 
 ---
 
@@ -101,7 +103,7 @@ These would be easy line items to add but aren't worth it for a single-host setu
 
 ## What this means
 
-For ~12 000 SEK/year (or ~6 000 if you treat internet as already-paid), this homelab replaces:
+For ~9 000 SEK/year on paper (or **~3 000 SEK/year marginal** once you exclude already-paid internet and the sunk-cost hardware), this homelab replaces:
 
 - Netflix + Disney+ + HBO subscriptions (Plex/*ARR stack)
 - Google Photos / iCloud Photos (Immich)
@@ -113,7 +115,7 @@ For ~12 000 SEK/year (or ~6 000 if you treat internet as already-paid), this hom
 
 Conservative estimate of replaced subscription costs: **~3 500 SEK/year**.
 
-So the homelab is not strictly cheaper. The case for it is **control, learning, and not having data scattered across SaaS providers** — the cost line just happens to be roughly even.
+So at the marginal-cost framing the homelab comes in roughly even with — and often slightly cheaper than — the equivalent SaaS bundle. At the full-cost framing (including a fresh hardware budget) it costs more, but the relevant number for someone reusing existing hardware on an already-paid internet line is the marginal one. The case for the lab is still primarily **control, learning, and keeping data off SaaS providers** — the cost line just happens to be neutral-to-favourable rather than expensive.
 
 ---
 
