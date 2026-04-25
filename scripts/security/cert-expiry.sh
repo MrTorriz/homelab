@@ -13,6 +13,7 @@ mkdir -p "$LOG_DIR"
 
 # Read credentials from .env if present
 ENV_FILE="${ENV_FILE:-$(dirname "$0")/../.env}"
+# shellcheck disable=SC1090
 [[ -f "$ENV_FILE" ]] && . "$ENV_FILE"
 NPM_URL="${NPM_URL:-http://${LAN_IP:-192.168.1.10}:81}"
 NPM_USER="${NPM_USER:-admin@example.com}"

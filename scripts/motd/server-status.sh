@@ -98,8 +98,10 @@ C_UPD=$OK;  [ "$UPDATES" != "0" ] && C_UPD=$WARN
              [ "$SEC_UPD" != "0" ] && C_UPD=$CRIT
 
 bar() {
-    local p=$1 c=$2 f=$(( p * 24 / 100 )) b=""
-    [ $f -gt 24 ] && f=24
+    local p=$1 c=$2
+    local f=$(( p * 24 / 100 ))
+    local b=""
+    [ "$f" -gt 24 ] && f=24
     for ((i=0;i<f;i++));  do b+="█"; done
     for ((i=f;i<24;i++)); do b+="░"; done
     printf "${c}%s${NC}" "$b"

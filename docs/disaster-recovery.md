@@ -73,12 +73,14 @@ RTO: 5–10 minutes per service.
 
 1. Boot from rescue media or fresh Ubuntu install on a spare SSD
 2. Re-run the bootstrap from this repo:
+
    ```bash
    git clone https://github.com/MrTorriz/homelab.git ~/homelab
    cd ~/homelab
    sudo bash security/ufw-baseline.sh
    sudo bash security/install-fail2ban.sh
    ```
+
 3. Mount the data disks (they're untouched)
 4. Restore appdata from latest snapshot
 5. Bring stack up: `cd docker && docker compose up -d`

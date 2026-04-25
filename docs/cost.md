@@ -37,7 +37,7 @@ The single biggest variable. Measured at the wall:
 
 At Swedish electricity prices (~2.50 SEK/kWh including grid + tax during typical periods):
 
-```
+```text
 800 kWh × 2.50 SEK = 2 000 SEK / year
 ```
 
