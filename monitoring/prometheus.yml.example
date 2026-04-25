@@ -1,0 +1,34 @@
+# Prometheus scrape config for the homelab observability stack.
+# Copy to ${APPDATA_DIR}/prometheus/config/prometheus.yml and (re)start
+# the prometheus container. Reload without restart with:
+#   curl -X POST http://${LAN_IP}:9090/-/reload
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'homelab'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Scaphandre exposes Prometheus text format 0.0.4 — needed because
+  # Prometheus 3.x defaults to OpenMetrics and would otherwise reject it.
+  - job_name: 'scaphandre'
+    fallback_scrape_protocol: PrometheusText0.0.4
+    static_configs:
+      - targets: ['scaphandre:8080']
+
+  - job_name: 'nvidia-gpu'
+    static_configs:
+      - targets: ['nvidia-gpu-exporter:9835']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
