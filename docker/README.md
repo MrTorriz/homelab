@@ -1,7 +1,7 @@
 # Docker Stack
 
-A self-hosted stack of ~35 containers covering media, photos, files & sync,
-local AI, security, observability and reverse proxy.
+A self-hosted stack of ~50 containers covering media, photos, files & sync,
+local AI, network management, security, observability and reverse proxy.
 
 ## Quick start
 
@@ -57,6 +57,9 @@ docker compose up -d
 | | Miniflux Postgres | – | DB |
 | **Utilities** | IT-Tools | 8090 | Dev/ops one-liners |
 | | draw.io | 8108 | Diagram editor |
+| **Network management** | UniFi Network Application | 8443 | Controller for Ubiquiti gear |
+| | UniFi DB (Mongo 4.4) | – | Backing store for the controller |
+| | netmap | – (proxied) | Static viewer for generated Nmap HTML |
 
 ## Conventions
 

@@ -1,0 +1,27 @@
+# ────────────────────────────────────────────────────────────
+# Glance — "Deep Space" theme variant
+#
+# Cyan-on-black palette. Iframed into Homepage's FEED tab when the
+# Deep Space Homepage theme is active. Only the `theme:` block differs
+# from `glance.yml` — see that file for the full pages: definition.
+#
+# In the live deployment these theme files share a single `pages.yml`
+# via Glance's `$include` directive; copy the `pages:` block from
+# `glance.yml` into here verbatim, or split it out and `$include` it.
+# ────────────────────────────────────────────────────────────
+
+server:
+  port: 8080
+  assets-path: /app/assets
+
+theme:
+  background-color: 0 0 2
+  contrast-multiplier: 1.15
+  text-saturation-multiplier: 0.5
+  primary-color: 184 100 50
+  positive-color: 142 71 45
+  negative-color: 348 100 60
+  custom-css-file: /assets/custom.css
+
+# pages: see glance.yml — copy or $include the same block here.
+pages: []
