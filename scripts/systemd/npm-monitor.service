@@ -1,0 +1,19 @@
+[Unit]
+Description=NPM access-log monitor (path scans, 401/403/404 spam, suspect UAs -> ntfy)
+After=docker.service network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/homelab/scripts/monitoring/npm-monitor.py
+Restart=on-failure
+RestartSec=10
+User=root
+StandardOutput=journal
+StandardError=journal
+Nice=15
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

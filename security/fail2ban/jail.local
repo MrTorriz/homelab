@@ -1,15 +1,17 @@
 [DEFAULT]
 bantime  = 1h
-findtime = 10m
-maxretry = 5
+findtime = 30m
+maxretry = 3
 backend  = systemd
 ignoreip = 127.0.0.1/8 192.168.0.0/16
 
 [sshd]
 enabled = true
 mode    = aggressive
-port    = ssh
+port    = 2222
 logpath = %(sshd_log)s
+action  = %(action_)s
+          ntfy
 
-# CrowdSec handles web-facing services (NPM, Immich, etc.) — fail2ban
-# stays focused on SSH only to keep the two systems from racing.
+# fail2ban handles SSH brute-force; Suricata handles network IDS at the host
+# level. Keeping the two systems' responsibilities split prevents racing.

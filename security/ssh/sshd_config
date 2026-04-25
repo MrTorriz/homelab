@@ -3,7 +3,10 @@
 # Validate before reload:  sshd -t -f /etc/ssh/sshd_config
 # ─────────────────────────────────────────────────────────────
 
-Port 22
+# Non-default port — defense-in-depth against opportunistic internet scans.
+# Doesn't replace key-only auth + fail2ban, just trims the noise floor in logs.
+# Remember to allow it through UFW:  sudo ufw allow 2222/tcp
+Port 2222
 AddressFamily inet
 Protocol 2
 

@@ -62,5 +62,30 @@
 # 30 4 * * *      /opt/homelab/scripts/backup/offsite-backup.sh
 #
 # ─── SYSTEMD (NOT CRON) ──────────────────────────────────────────────────────
-# Long-running daemons — installed as systemd units, not cron entries:
-#   docker-watcher.service   monitoring/docker-watcher.sh   (streams docker events)
+# Long-running daemons — installed as systemd units, not cron entries.
+# Unit files live in scripts/systemd/. See that README for install steps.
+#
+#   docker-watcher.service       monitoring/docker-watcher.sh
+#       streams `docker events` and pushes ntfy on die/oom
+#
+#   docker-events-ntfy.service   monitoring/docker-events-monitor.py
+#       broader docker event monitor (start/stop/health transitions)
+#
+#   npm-monitor.service          monitoring/npm-monitor.py
+#       tails NPM access logs for path scans, 401/403/404 spam, suspect UAs
+#
+#   suricata-ntfy.service        monitoring/suricata-monitor.py
+#       reads Suricata eve.json and pushes severity-1/2 alerts
+#
+# ─── PAM HOOKS (NOT CRON) ────────────────────────────────────────────────────
+# Triggered by pam_exec.so on session open — wire into /etc/pam.d/:
+#
+#   /etc/pam.d/sshd:
+#       session optional pam_exec.so seteuid /opt/homelab/scripts/security/ssh-login-notify.sh
+#
+#   /etc/pam.d/sudo:
+#       session optional pam_exec.so seteuid /opt/homelab/scripts/security/sudo-notify.sh
+#
+# ─── FAIL2BAN ACTION (NOT CRON) ──────────────────────────────────────────────
+# Wired into fail2ban via security/fail2ban/action.d/ntfy.conf, which calls:
+#   scripts/security/fail2ban-notify.sh   on every ban/unban
