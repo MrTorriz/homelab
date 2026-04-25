@@ -4,7 +4,7 @@ Most homelab posts brag about software stacks but skip the receipts. This page b
 
 All figures are annualised. Currency is **SEK** (swap to your local equivalent — the structure is what matters).
 
-> Numbers below are placeholders for the typical setup described in [`docs/hardware.md`](hardware.md). Replace with your actual figures or strike through to indicate "exact figure intentionally omitted."
+> Most figures below now come from the actual Prometheus + Scaphandre + nvidia-gpu-exporter stack — see [`docs/observability.md`](observability.md). Where a number is still illustrative (e.g. internet, hardware depreciation), it's flagged inline.
 
 ---
 
@@ -26,24 +26,26 @@ The internet line is the largest cost — but it is shared with the household, s
 
 ## Electricity
 
-The single biggest variable. Measured at the wall:
+The single biggest variable, now actually measured. Scaphandre reads Intel RAPL counters for CPU + RAM watts and `nvidia-smi` reports GPU watts; the Grafana dashboard sums them on a 30-second cadence:
 
-| State | Watts | Hours/year | kWh/year |
+| State | Watts (measured) | Hours/year | kWh/year |
 |---|---:|---:|---:|
-| Idle (most of the time) | 85 | ~7 500 | 638 |
-| Light load (Plex direct play, web traffic) | 110 | ~1 000 | 110 |
-| Heavy load (Plex transcode, Immich ML) | 200 | ~260 | 52 |
-| **Total** | | **8 760** | **~800 kWh** |
+| Idle (most of the time) | ~80 | ~7 500 | 600 |
+| Light load (Plex direct play, web traffic) | ~110 | ~1 000 | 110 |
+| Heavy load (Plex transcode, Immich ML on GPU) | ~200 | ~260 | 52 |
+| **Total (silicon only)** | | **8 760** | **~760 kWh** |
+
+The "silicon only" caveat matters: Scaphandre + nvidia-smi cover CPU, RAM and GPU. They don't see HDDs spinning, fans, motherboard idle draw, or PSU losses. Wall-socket draw is roughly **+15–25 %** above silicon — call it ~900 kWh / year total.
 
 At Swedish electricity prices (~2.50 SEK/kWh including grid + tax during typical periods):
 
 ```text
-800 kWh × 2.50 SEK = 2 000 SEK / year
+900 kWh × 2.50 SEK ≈ 2 250 SEK / year
 ```
 
-Real cost moves with spot prices. During cold winter spikes this number doubles; in summer it halves.
+Real cost moves with spot prices. During cold winter spikes this doubles; in summer it halves. The Grafana dashboard's *Energy cost (24h)* panel multiplies live kWh by `$ELECTRICITY_PRICE` (template variable, default 2.0) so you can dial in your own tariff.
 
-**Why it stays low:** the box is a single 6-core Coffee Lake build, not a rack of enterprise gear. The GPU is only powered up by Plex/Immich on demand.
+**Why it stays low:** the box is a single 6-core Coffee Lake build, not a rack of enterprise gear. The GPU is only powered up by Plex transcodes and Immich ML inference; idle GPU draw is ~20 W.
 
 ---
 

@@ -2,12 +2,12 @@
 
 # Homelab
 
-**Self-hosted infrastructure as code — ~35 Docker services, defense-in-depth security, fully reproducible.**
+**Self-hosted infrastructure as code — ~50 Docker services, Prometheus + Grafana power-monitoring, defense-in-depth security, fully reproducible.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MrTorriz/homelab/lint.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/MrTorriz/homelab/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/MrTorriz/homelab?style=flat-square&logo=git&logoColor=white)](https://github.com/MrTorriz/homelab/commits/main)
-[![Services](https://img.shields.io/badge/services-~35-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
+[![Services](https://img.shields.io/badge/services-~50-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
 [![Open inbound ports](https://img.shields.io/badge/inbound_ports-0-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
 
 <br/>
@@ -35,11 +35,12 @@
   <img src="docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
 </p>
 
-Single-host homelab on Ubuntu 24.04, ~35 Dockerised services, behind Nginx Proxy Manager and a Cloudflare Tunnel for external access. Everything is reproducible from this repo: clone, set `.env`, `docker compose up -d`.
+Single-host homelab on Ubuntu 24.04, ~50 Dockerised services, behind Nginx Proxy Manager and a Cloudflare Tunnel for external access. Everything is reproducible from this repo: clone, set `.env`, `docker compose up -d`.
 
 - **Defense-in-depth:** UFW default-deny, Suricata IDS (passive monitoring), fail2ban (SSH brute-force), SSH key-only on a non-default port, `no-new-privileges` on every container, Docker socket proxy, VPN-bound torrent traffic with killswitch.
 - **Zero open inbound ports:** external access goes through Cloudflare Tunnel + Google OAuth — the home IP never appears in DNS.
-- **Event-driven alerting:** every SSH login, sudo invocation, fail2ban ban, Suricata signature hit, and Docker event pushes to ntfy → iPhone in seconds.
+- **Event-driven alerting:** seven distinct sources (SSH login, sudo, fail2ban, Suricata, Docker events, NPM access, file watcher) push to ntfy → iPhone in seconds — admin-noise filtered out.
+- **Power-aware monitoring:** Prometheus + Grafana + Scaphandre measure actual wattage (CPU/RAM via Intel RAPL, GPU via nvidia-smi). The cost panel parameterises electricity price.
 - **Idempotent deploys:** rsync `--checksum` from git → live, conditional service reloads, validation gates on SSH config.
 - **Observability:** Glances, Scrutiny (SMART), Speedtest Tracker, periodic healthcheck → ntfy.
 
@@ -51,10 +52,10 @@ Single-host homelab on Ubuntu 24.04, ~35 Dockerised services, behind Nginx Proxy
   <img src="docs/img/architecture.svg" alt="Homelab architecture — perimeter, detection, apps, observability, VPN-bound torrent traffic" width="900"/>
 </p>
 
-The diagram is rendered from [`docs/architecture.mmd`](docs/architecture.mmd) via `mmdc` (Mermaid CLI) — same *diagram-as-code* principle as the demo GIFs under `scripts/demo/`. Re-render after edits with:
+The diagram is rendered from [`docs/architecture.d2`](docs/architecture.d2) via [d2lang.com](https://d2lang.com) — same *diagram-as-code* principle as the demo GIFs under `scripts/demo/`. Re-render after edits with:
 
 ```bash
-mmdc -i docs/architecture.mmd -o docs/img/architecture.svg -b "#0d0d0d" -w 1600
+d2 --layout=elk --theme=200 docs/architecture.d2 docs/img/architecture.svg
 ```
 
 ---
@@ -71,7 +72,7 @@ mmdc -i docs/architecture.mmd -o docs/img/architecture.svg -b "#0d0d0d" -w 1600
 <tr><td><b>Local AI</b></td><td>Ollama · Open WebUI · Faster-Whisper (speech-to-text on GPU)</td></tr>
 <tr><td><b>Network / DNS</b></td><td>AdGuard Home (LAN-wide DNS + blocking)</td></tr>
 <tr><td><b>Security</b></td><td>UFW · fail2ban · Suricata IDS · Mullvad WireGuard (lockdown) · SSH key-only on port 2222 · Docker socket proxy · event-driven ntfy alerters (SSH login, sudo, fail2ban, Suricata, Docker events)</td></tr>
-<tr><td><b>Observability</b></td><td>Glances · Scrutiny (SMART) · Speedtest Tracker · custom healthcheck → ntfy</td></tr>
+<tr><td><b>Observability</b></td><td>Prometheus + Grafana (power, CPU, GPU, energy) · Scaphandre (RAPL) · nvidia-gpu-exporter · node-exporter · cAdvisor · Glances · Scrutiny (SMART) · Speedtest Tracker · healthcheck → ntfy</td></tr>
 <tr><td><b>Docker mgmt</b></td><td>Portainer · Dozzle · Watchtower</td></tr>
 <tr><td><b>Misc</b></td><td>Miniflux · ntfy · IT-Tools · draw.io</td></tr>
 </table>
@@ -124,6 +125,7 @@ External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:44
 
 - [`docs/architecture.md`](docs/architecture.md) — How traffic, storage, and trust flow through the system
 - [`docs/security.md`](docs/security.md) — Defense-in-depth model + STRIDE analysis
+- [`docs/observability.md`](docs/observability.md) — Three-layer model: metrics (Prometheus + Grafana + Scaphandre), events (7 ntfy sources), health (healthcheck cron)
 - [`docs/metrics.md`](docs/metrics.md) — What the system actually catches (real numbers)
 - [`docs/runbook.md`](docs/runbook.md) — Incident playbooks: what to do at 03:00
 - [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + zero-to-running restore

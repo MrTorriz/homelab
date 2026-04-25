@@ -1,0 +1,163 @@
+# Homelab architecture — rendered with d2lang.com
+#
+# Build:  d2 docs/architecture.d2 docs/img/architecture.svg
+#         d2 docs/architecture.d2 docs/img/architecture.png
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+    theme-id: 200
+    dark-theme-id: 200
+    pad: 24
+    sketch: false
+  }
+}
+
+direction: down
+
+# ─────────────────────────────────────────────────────────────
+# External world
+# ─────────────────────────────────────────────────────────────
+
+internet: {
+  label: "🌐 Internet"
+  shape: cloud
+  style: {
+    fill: "#0d0d0d"
+    stroke: "#5c6370"
+    stroke-dash: 4
+    font-color: "#a3a3a3"
+  }
+}
+
+# ─────────────────────────────────────────────────────────────
+# Edge perimeter — Cloudflare Tunnel + ISP gateway
+# ─────────────────────────────────────────────────────────────
+
+edge: "🔒 Edge — perimeter" {
+  style: {
+    stroke: "#f0a830"
+    fill: "#161616"
+    font-color: "#e6e6e6"
+    stroke-width: 2
+    border-radius: 12
+  }
+
+  cf: "Cloudflare Tunnel\n+ Google OAuth" {
+    style: { fill: "#1c1c1c"; stroke: "#f0a830"; font-color: "#e6e6e6" }
+  }
+  router: "Router / Gateway\nno port-forwarding" {
+    style: { fill: "#1c1c1c"; stroke: "#f0a830"; font-color: "#e6e6e6" }
+  }
+}
+
+# ─────────────────────────────────────────────────────────────
+# Home LAN — single Docker host running everything
+# ─────────────────────────────────────────────────────────────
+
+lan: "🏠 Home LAN — 192.168.x.0/24" {
+  style: {
+    stroke: "#5fa8d3"
+    fill: "#0d0d0d"
+    font-color: "#e6e6e6"
+    stroke-width: 2
+    border-radius: 12
+  }
+
+  adguard: "AdGuard Home\nDNS + ad-blocking" {
+    style: { fill: "#1c1c1c"; stroke: "#f0a830"; font-color: "#e6e6e6" }
+  }
+
+  host: "🖥️ Docker Host — Ubuntu 24.04" {
+    style: {
+      stroke: "#abb2bf"
+      fill: "#0d0d0d"
+      font-color: "#e6e6e6"
+      stroke-width: 1
+      border-radius: 10
+    }
+
+    # Reverse proxy — single ingress point
+    npm: "Nginx Proxy Manager\n:80 / :443" {
+      shape: hexagon
+      style: { fill: "#1c1c1c"; stroke: "#5fa8d3"; font-color: "#e6e6e6"; stroke-width: 2 }
+    }
+
+    # Detection layer — three different signals
+    detect: "🛡 Detection" {
+      style: {
+        stroke: "#e06c75"
+        fill: "#161616"
+        font-color: "#e6e6e6"
+        border-radius: 8
+      }
+      ufw: "UFW\ndefault-deny" { style: { fill: "#1c1c1c"; stroke: "#e06c75"; font-color: "#e6e6e6" } }
+      f2b: "fail2ban\nSSH brute-force" { style: { fill: "#1c1c1c"; stroke: "#e06c75"; font-color: "#e6e6e6" } }
+      suri: "Suricata IDS\npassive monitoring" { style: { fill: "#1c1c1c"; stroke: "#e06c75"; font-color: "#e6e6e6" } }
+    }
+
+    # Application services — what the user actually uses
+    apps: "📦 Apps" {
+      style: {
+        stroke: "#a3be8c"
+        fill: "#161616"
+        font-color: "#e6e6e6"
+        border-radius: 8
+      }
+      media: "Media · *ARR\nPlex · Sonarr · Radarr\nLidarr · Bazarr · Tdarr" { style: { fill: "#1c1c1c"; stroke: "#a3be8c"; font-color: "#e6e6e6" } }
+      photos: "Photos\nImmich (NVENC + CUDA)" { style: { fill: "#1c1c1c"; stroke: "#a3be8c"; font-color: "#e6e6e6" } }
+      files: "Files & sync\nNextcloud + Postgres + Redis" { style: { fill: "#1c1c1c"; stroke: "#a3be8c"; font-color: "#e6e6e6" } }
+      ai: "Local AI\nOllama · Open WebUI\nFaster-Whisper" { style: { fill: "#1c1c1c"; stroke: "#a3be8c"; font-color: "#e6e6e6" } }
+    }
+
+    # Observability — Prometheus stack + dashboards + push alerts
+    obs: "📊 Observability" {
+      style: {
+        stroke: "#56b6c2"
+        fill: "#161616"
+        font-color: "#e6e6e6"
+        border-radius: 8
+      }
+      prom: "Prometheus\n90 d retention" { style: { fill: "#1c1c1c"; stroke: "#56b6c2"; font-color: "#e6e6e6" } }
+      graf: "Grafana\nMserver overview" { style: { fill: "#1c1c1c"; stroke: "#56b6c2"; font-color: "#e6e6e6" } }
+      exporters: "Exporters\nnode · cAdvisor\nScaphandre · NVIDIA" { style: { fill: "#1c1c1c"; stroke: "#56b6c2"; font-color: "#e6e6e6" } }
+      alerts: "Event-driven ntfy\n7 sources → iPhone" { style: { fill: "#1c1c1c"; stroke: "#56b6c2"; font-color: "#e6e6e6" } }
+    }
+
+    # VPN-tunnel — torrent traffic confined here
+    vpn: "🔐 VPN tunnel" {
+      style: {
+        stroke: "#c678dd"
+        fill: "#161616"
+        font-color: "#e6e6e6"
+        border-radius: 8
+      }
+      mullvad: "Mullvad WG\nlockdown mode" { shape: cylinder; style: { fill: "#1c1c1c"; stroke: "#c678dd"; font-color: "#e6e6e6" } }
+      qb: "qBittorrent\nVPN-bound · killswitch" { style: { fill: "#1c1c1c"; stroke: "#c678dd"; font-color: "#e6e6e6" } }
+    }
+  }
+}
+
+# ─────────────────────────────────────────────────────────────
+# Connections — flow direction matters
+# ─────────────────────────────────────────────────────────────
+
+internet -> edge.cf: "HTTPS" { style.stroke: "#5fa8d3"; style.stroke-width: 2 }
+internet -> edge.router: "DNS / WAN" { style.stroke: "#5fa8d3"; style.stroke-dash: 3 }
+
+edge.cf -> lan.host.npm: "private tunnel" { style.stroke: "#5fa8d3"; style.stroke-width: 2 }
+edge.router -> lan.adguard
+lan.adguard -> lan.host.npm
+
+lan.host.npm -> lan.host.apps: "TLS-terminated" { style.stroke: "#a3be8c"; style.stroke-width: 2 }
+lan.host.npm -> lan.host.obs.graf
+
+lan.host.detect.ufw -> internet: "drops 22k/wk" { style.stroke: "#e06c75"; style.stroke-dash: 3 }
+lan.host.detect.f2b -> lan.host.npm: "bans" { style.stroke: "#e06c75"; style.stroke-dash: 3 }
+lan.host.detect.suri -> lan.host.obs.alerts: "signature alerts" { style.stroke: "#e06c75"; style.stroke-dash: 3 }
+
+lan.host.obs.exporters -> lan.host.obs.prom: "scrape /metrics" { style.stroke: "#56b6c2" }
+lan.host.obs.prom -> lan.host.obs.graf: "PromQL" { style.stroke: "#56b6c2" }
+
+lan.host.vpn.qb -> lan.host.vpn.mullvad: "only via" { style.stroke: "#c678dd"; style.stroke-width: 2 }
+lan.host.vpn.mullvad -> internet: "exit IP (Sweden)" { style.stroke: "#c678dd"; style.stroke-width: 2 }
