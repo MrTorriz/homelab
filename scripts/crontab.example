@@ -1,0 +1,66 @@
+# Homelab crontab — example schedule
+# Install with `crontab -e` (user) and the root section with `sudo crontab -e`.
+# Paths assume scripts live under $HOME/scripts/. Logs land in $HOME/logs/.
+#
+# Format: m h dom mon dow  command
+# All entries use absolute paths via $HOME so the scheduler has no env surprises.
+#
+# ─── USER CRON ───────────────────────────────────────────────────────────────
+
+# Health check — verify containers, VPN, DNS, disk every 15 min
+*/15 * * * *    $HOME/scripts/healthcheck.sh
+
+# Restart-loop detector — alert on containers that flap (deduplicated, 30 min cooldown)
+*/5 * * * *     $HOME/scripts/monitoring/restart-loop-monitor.sh
+
+# Temperature monitor — CPU + GPU thresholds every 30 min
+*/30 * * * *    $HOME/scripts/monitoring/temp-monitor.sh
+
+# Homepage stats — refresh stats.json (movies/series/disk) every 10 min
+*/10 * * * *    /usr/bin/python3 $HOME/scripts/monitoring/homepage-stats.py
+
+# UFW block log — render readable summary table hourly
+0 * * * *       $HOME/scripts/security/update-ufw-logs.sh
+
+# Scrutiny SMART metrics — collect from inside container hourly
+0 * * * *       docker exec scrutiny scrutiny-collector-metrics run
+
+# Mullvad rotation — pick a new exit relay every 6h
+30 */6 * * *    $HOME/scripts/mullvad-rotate.sh
+
+# Daily — log hygiene at 02:00 (journal, suricata, rclone)
+0 2 * * *       $HOME/scripts/maintenance/syslog-cleaner.sh
+
+# Weekly — Sunday 00:00 virus + rootkit scan
+0 0 * * 0       $HOME/scripts/security/virus-scan.sh
+
+# Weekly — Sunday 05:00 docker prune (images, networks, dangling volumes)
+0 5 * * 0       $HOME/scripts/maintenance/docker-cleanup.sh
+
+# Weekly — Sunday 08:00 health snapshot via ntfy
+0 8 * * 0       $HOME/scripts/maintenance/weekly-report.sh
+
+# Weekly — Sunday 09:00 security digest (fail2ban, lynis, ufw, virus)
+0 9 * * 0       $HOME/scripts/security/security-digest.sh
+
+# Weekly — Monday 07:00 verify backups (local + offsite freshness + gaps)
+0 7 * * 1       $HOME/scripts/backup/backup-verify.sh
+
+# Weekly — Monday 08:00 SSL cert expiry check via NPM API
+0 8 * * 1       $HOME/scripts/security/cert-expiry.sh
+
+# Weekly — Monday 09:00 storage report (per-mount, top dirs)
+0 9 * * 1       $HOME/scripts/maintenance/storage-report.sh
+
+# ─── ROOT CRON ───────────────────────────────────────────────────────────────
+# Install with: sudo crontab -e
+#
+# Daily appdata snapshot at 04:00 (needs root for full container access)
+# 0 4 * * *       /opt/homelab/scripts/backup/backup-appdata.sh
+#
+# Daily encrypted offsite push at 04:30 (rclone to remote, requires VPN up)
+# 30 4 * * *      /opt/homelab/scripts/backup/offsite-backup.sh
+#
+# ─── SYSTEMD (NOT CRON) ──────────────────────────────────────────────────────
+# Long-running daemons — installed as systemd units, not cron entries:
+#   docker-watcher.service   monitoring/docker-watcher.sh   (streams docker events)
