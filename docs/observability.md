@@ -71,7 +71,7 @@ Cost is parameterised so anyone forking the dashboard sets their own electricity
 
 The `customapi` widget on the dashboard hits Prometheus directly with one URL-encoded PromQL that returns three labelled vectors:
 
-```
+```promql
 label_replace((scaph_host_power_microwatts/1e6) + on() group_left() nvidia_smi_power_draw_watts, "k","total","","") or
 label_replace( scaph_host_power_microwatts/1e6, "k","cpu","","") or
 label_replace( nvidia_smi_power_draw_watts,    "k","gpu","","")
