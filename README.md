@@ -2,12 +2,12 @@
 
 # Homelab
 
-**Self-hosted infrastructure as code — ~30 Docker services, defense-in-depth security, fully reproducible.**
+**Self-hosted infrastructure as code — ~35 Docker services, defense-in-depth security, fully reproducible.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MrTorriz/homelab/lint.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/MrTorriz/homelab/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/MrTorriz/homelab?style=flat-square&logo=git&logoColor=white)](https://github.com/MrTorriz/homelab/commits/main)
-[![Services](https://img.shields.io/badge/services-~30-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
+[![Services](https://img.shields.io/badge/services-~35-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
 [![Open inbound ports](https://img.shields.io/badge/inbound_ports-0-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
 
 <br/>
@@ -16,7 +16,7 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu_24.04-E95420?style=flat-square&logo=ubuntu&logoColor=white)](#)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](#)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white)](#)
-[![CrowdSec](https://img.shields.io/badge/CrowdSec-1F2937?style=flat-square&logoColor=white)](#)
+[![Suricata](https://img.shields.io/badge/Suricata_IDS-DC322F?style=flat-square&logoColor=white)](#)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white)](#)
 [![Mullvad](https://img.shields.io/badge/Mullvad_VPN-FFD524?style=flat-square&logoColor=black)](#)
 
@@ -30,12 +30,13 @@
   <img src="docs/img/homepage.gif" alt="Homepage dashboard — themes &amp; live service status" width="780"/>
 </p>
 
-Single-host homelab on Ubuntu 24.04, ~30 Dockerised services, behind Nginx Proxy Manager and a Cloudflare Tunnel for external access. Everything is reproducible from this repo: clone, set `.env`, `docker compose up -d`.
+Single-host homelab on Ubuntu 24.04, ~35 Dockerised services, behind Nginx Proxy Manager and a Cloudflare Tunnel for external access. Everything is reproducible from this repo: clone, set `.env`, `docker compose up -d`.
 
-- **Defense-in-depth:** UFW default-deny, CrowdSec, fail2ban, SSH key-only, `no-new-privileges` on every container, Docker socket proxy, VPN-bound torrent traffic with killswitch.
+- **Defense-in-depth:** UFW default-deny, Suricata IDS (passive monitoring), fail2ban (SSH brute-force), SSH key-only on a non-default port, `no-new-privileges` on every container, Docker socket proxy, VPN-bound torrent traffic with killswitch.
 - **Zero open inbound ports:** external access goes through Cloudflare Tunnel + Google OAuth — the home IP never appears in DNS.
+- **Event-driven alerting:** every SSH login, sudo invocation, fail2ban ban, Suricata signature hit, and Docker event pushes to ntfy → iPhone in seconds.
 - **Idempotent deploys:** rsync `--checksum` from git → live, conditional service reloads, validation gates on SSH config.
-- **Observability:** Glances, Scrutiny (SMART), Speedtest Tracker, healthcheck → ntfy.
+- **Observability:** Glances, Scrutiny (SMART), Speedtest Tracker, periodic healthcheck → ntfy.
 
 ---
 
@@ -55,9 +56,10 @@ flowchart LR
         AdGuard[AdGuard Home<br/>DNS]
         subgraph Host[Docker Host – Ubuntu 24.04]
             NPM[Nginx Proxy Manager<br/>:80/:443]
-            Crowd[CrowdSec]
-            Apps[Media · Photos<br/>Dashboards · Tools]
-            Obs[Glances · Scrutiny<br/>Speedtest]
+            Suri[Suricata IDS<br/>passive monitoring]
+            F2B[fail2ban<br/>SSH brute-force]
+            Apps[Media · Photos · Files<br/>AI · Dashboards · Tools]
+            Obs[Glances · Scrutiny<br/>Speedtest · ntfy]
             VPN((Mullvad WG))
             QB[qBittorrent<br/>killswitch]
         end
@@ -70,7 +72,8 @@ flowchart LR
     AdGuard --> NPM
     NPM --> Apps
     NPM --> Obs
-    Crowd -.->|bans| NPM
+    Suri -.->|alerts| Obs
+    F2B -.->|bans| NPM
     QB -->|only via| VPN --> Internet
 ```
 
@@ -83,11 +86,13 @@ flowchart LR
 <table>
 <tr><th>Layer</th><th>Services</th></tr>
 <tr><td><b>Reverse proxy</b></td><td>Nginx Proxy Manager · Cloudflare Tunnel</td></tr>
-<tr><td><b>Dashboards</b></td><td>Homepage · Glance</td></tr>
+<tr><td><b>Dashboards</b></td><td>Homepage · Glance (×4: base + 3 themed feed variants)</td></tr>
 <tr><td><b>Media</b></td><td>Plex · Sonarr · Radarr · Lidarr · Bazarr · Prowlarr · qBittorrent · FlareSolverr · Tdarr · Seerr · Audiobookshelf</td></tr>
 <tr><td><b>Photos</b></td><td>Immich (server + ML on GPU + Postgres + Redis)</td></tr>
+<tr><td><b>Files & sync</b></td><td>Nextcloud (app + Postgres 16 + Redis 7, External Storage on bulk disk, 2FA)</td></tr>
+<tr><td><b>Local AI</b></td><td>Ollama · Open WebUI · Faster-Whisper (speech-to-text on GPU)</td></tr>
 <tr><td><b>Network / DNS</b></td><td>AdGuard Home (LAN-wide DNS + blocking)</td></tr>
-<tr><td><b>Security</b></td><td>UFW · fail2ban · CrowdSec · Mullvad WireGuard (lockdown) · SSH key-only · Docker socket proxy</td></tr>
+<tr><td><b>Security</b></td><td>UFW · fail2ban · Suricata IDS · Mullvad WireGuard (lockdown) · SSH key-only on port 2222 · Docker socket proxy · event-driven ntfy alerters (SSH login, sudo, fail2ban, Suricata, Docker events)</td></tr>
 <tr><td><b>Observability</b></td><td>Glances · Scrutiny (SMART) · Speedtest Tracker · custom healthcheck → ntfy</td></tr>
 <tr><td><b>Docker mgmt</b></td><td>Portainer · Dozzle · Watchtower</td></tr>
 <tr><td><b>Misc</b></td><td>Miniflux · ntfy · IT-Tools · draw.io</td></tr>
@@ -101,12 +106,12 @@ Full per-service catalogue: [`docker/README.md`](docker/README.md)
 
 ```text
 .
-├── docker/              # Compose stack (~30 services) + .env.example
+├── docker/              # Compose stack (~35 services) + .env.example
 ├── homepage/            # Dashboard config (services + widgets)
-├── scripts/             # deploy, healthcheck, VPN rotation
+├── scripts/             # deploy, healthcheck, backup/, security/, monitoring/, maintenance/, motd/, systemd/
 ├── security/            # UFW, fail2ban, SSH, hardening checklist
-├── docs/                # Architecture, security model, hardware, decisions
-└── .github/workflows/   # CI: shellcheck + yamllint + markdownlint + gitleaks
+├── docs/                # Architecture, security model, threat model, runbook, DR, cost, decisions
+└── .github/workflows/   # CI: shellcheck + yamllint + markdownlint + gitleaks + sanitize-check
 ```
 
 ---
