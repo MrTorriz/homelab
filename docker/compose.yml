@@ -349,12 +349,20 @@ services:
       - "${LAN_IP}:8000:80"
     networks: [default]
 
-  # ── Photos (Immich) ──────────────────────────────────────
+  # ── Photos (Immich, GPU-accelerated) ─────────────────────
+  # Server uses NVENC for video transcodes; ML uses CUDA for CLIP
+  # smart-search + buffalo_l face detection. Storage template
+  # (year/month/filename) and tuned concurrency are configured
+  # via the Immich admin API after first boot — see docker/README.md.
   immich-server:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
     container_name: immich_server
     restart: always
     security_opt: [no-new-privileges:true]
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     env_file: [.env]
     volumes:
       - ${STORAGE_DIR}/immich-photos:/usr/src/app/upload
@@ -365,20 +373,17 @@ services:
     networks: [default]
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}-cuda
     container_name: immich_machine_learning
     restart: always
     security_opt: [no-new-privileges:true]
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     env_file: [.env]
     volumes:
       - ${APPDATA_DIR}/immich/model-cache:/cache
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     networks: [default]
 
   immich-redis:

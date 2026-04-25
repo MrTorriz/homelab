@@ -65,7 +65,18 @@ docker compose up -d
 - **Docker socket:** containers go through `docker-proxy` (read-only API), not the raw socket
 - **Storage layout:** `${APPDATA_DIR}` for config, `${MEDIA_DIR}` for media, `${STORAGE_DIR}` for everything else
 - **VPN-bound traffic:** torrent client runs in `network_mode: host` and is killswitch-bound to the VPN interface (see `../security/vpn-killswitch.md`)
-- **GPU passthrough:** Tdarr, Immich ML, Ollama and Faster-Whisper all share the host GPU via the `nvidia` driver
+- **GPU passthrough:** Tdarr, Immich (server NVENC + ML CUDA), Ollama and Faster-Whisper all share the host GPU via `runtime: nvidia`. Immich uses the `:release-cuda` ML image variant for CLIP smart-search and `buffalo_l` face detection.
+
+## Immich post-install tuning
+
+After first boot, the Immich admin API is used to set non-defaults that aren't expressible in compose:
+
+- **Storage template:** `{{y}}/{{MM}}/{{filename}}` (year/month/filename) so files on disk match albums on dashboard
+- **ML concurrency:** smart-search + face detection raised from 2 to 4 (the GPU has headroom)
+- **Thumbnail / metadata jobs:** raised from 5 to 6 parallel workers
+- **Database backup retention:** 14 → 30 days
+
+These settings live in the Immich Postgres DB; export with `immich-cli` or set via the admin web UI / API.
 
 ## Related
 
