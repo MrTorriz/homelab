@@ -2,7 +2,12 @@
 bantime  = 1h
 findtime = 30m
 maxretry = 3
-backend  = systemd
+
+# Use whatever backend the distro's sshd ships with (systemd on
+# modern Ubuntu, file-based on older hosts). Portable across forks.
+backend  = %(sshd_backend)s
+
+# Don't lock yourself out. Adjust the second CIDR to your LAN.
 ignoreip = 127.0.0.1/8 192.168.0.0/16
 
 [sshd]
