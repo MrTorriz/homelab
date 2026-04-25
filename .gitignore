@@ -17,3 +17,6 @@ backups/
 
 # Lokal arbetsjournal (skrivs av /homelab-skill) — ska aldrig pushas
 JOURNAL.md
+
+# Lokal referensfil — skills/plugins vi använder i sessionen, ska aldrig pushas
+TOOLS.md
