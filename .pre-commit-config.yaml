@@ -37,3 +37,15 @@ repos:
     rev: v8.18.4
     hooks:
       - id: gitleaks
+
+  # Local sanitisation guard — patterns live in .sanitize-patterns
+  # (gitignored). Skipped automatically if that file is missing on a
+  # fresh clone. See .sanitize-patterns.example for the template.
+  - repo: local
+    hooks:
+      - id: sanitize-check
+        name: sanitize-check (local PII guard)
+        entry: scripts/sanitize-check.sh
+        language: system
+        pass_filenames: false
+        always_run: true
