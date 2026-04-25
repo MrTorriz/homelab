@@ -359,10 +359,11 @@
   <g stroke="#f5a623" stroke-width="1.5" stroke-dasharray="5,2" fill="none">
     <!-- mullvad endpoint (internet band) → tunnel rail top -->
     <path d="M 980 138 L 1108 138" marker-end="url(#arrowAmber)" stroke-opacity="0.8"/>
-    <!-- tunnel → qBittorrent (only egress that uses VPN) -->
-    <path d="M 1108 631 L 780 631" marker-end="url(#arrowAmber)"/>
+    <!-- tunnel → qBittorrent — orthogonal route around Observability column
+         (down through gap x=1010-1108, left under row 7, up through gap x=780-810) -->
+    <path d="M 1108 631 L 1080 631 L 1080 700 L 795 700 L 795 631 L 780 631" marker-end="url(#arrowAmber)"/>
   </g>
-  <text x="940" y="624" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">torrent traffic only · :6881</text>
+  <text x="937" y="694" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">torrent traffic only · :6881</text>
   <text x="1042" y="132" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">handshake</text>
 
   <!-- ================================================================
