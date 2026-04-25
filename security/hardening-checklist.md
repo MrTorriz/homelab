@@ -20,7 +20,7 @@ A copy-and-work-through list for any new homelab host. Each item has a one-line 
 
 - [ ] Install fail2ban, drop in `jail.local` from this repo, restart
 - [ ] Verify `fail2ban-client status sshd` shows the jail active
-- [ ] Optional: deploy CrowdSec for behavioural detection on web-facing services
+- [ ] Optional: deploy Suricata for passive network IDS (rule categories: emerging-threats, exploit-kit, malware, scan, dns, web-attacks)
 
 ## Patching
 

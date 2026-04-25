@@ -63,10 +63,22 @@ flowchart LR
     Plex --> NVENC{NVIDIA GPU}
     Immich-ML --> NVENC
     Tdarr --> NVENC
+    FasterWhisper --> NVENC
+    Ollama --> NVENC
 
-    CrowdSec -->|reads logs| NPM
-    CrowdSec -->|bouncer| iptables[(iptables)]
+    NPM --> Nextcloud
+    NPM --> OpenWebUI
+    OpenWebUI --> Ollama
+    Nextcloud --> Postgres[(Postgres 16)]
+    Nextcloud --> Redis[(Redis 7)]
+
+    Suri[Suricata IDS<br/>passive monitoring] -.->|af-packet| LANIface{{LAN interface}}
+    Suri -->|fast.log severity 1-2| ntfy[(ntfy push)]
+    fail2ban -->|reads logs| NPM
+    fail2ban -->|bans at firewall| UFW[(UFW / iptables)]
 ```
+
+**Detection vs response, split:** `fail2ban` handles brute-force responses against SSH and NPM logs (it bans IPs). Suricata observes traffic on the LAN-facing interface in passive mode, raising alerts on exploit patterns, malware C2, scans, and policy violations — those go straight to push notification rather than auto-blocking. Inference and transcription workloads (Ollama, Open WebUI, Faster-Whisper) share the GPU with Plex transcoding and Immich ML; Nextcloud sits behind NPM with its own isolated Postgres and Redis.
 
 ## External access
 
