@@ -143,6 +143,8 @@ External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:44
 - [`docs/security.md`](docs/security.md) — Defense-in-depth model + STRIDE analysis
 - [`docs/metrics.md`](docs/metrics.md) — What the system actually catches (real numbers)
 - [`docs/runbook.md`](docs/runbook.md) — Incident playbooks: what to do at 03:00
+- [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + zero-to-running restore
+- [`docs/cost.md`](docs/cost.md) — What it actually costs to run, with receipts
 - [`docs/hardware.md`](docs/hardware.md) — Specs, storage layout, GPU role
 - [`docs/decisions.md`](docs/decisions.md) — Why these tools and not the alternatives
 
