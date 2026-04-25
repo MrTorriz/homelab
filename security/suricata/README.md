@@ -22,7 +22,7 @@ fires, UFW or `iptables -I INPUT -s <ip> -j DROP` is one command away.
 
 ## Alert flow
 
-```
+```text
 NIC  →  Suricata (af-packet)  →  /var/log/suricata/fast.log
                                         │
                                         ▼
