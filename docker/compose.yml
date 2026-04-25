@@ -1,9 +1,10 @@
 # ────────────────────────────────────────────────────────────
 # Homelab — Docker Compose stack
 #
-# A curated, self-hosted stack covering media, photos, security,
-# observability and reverse proxy. Every container runs with
-# `no-new-privileges` and binds only to the LAN interface.
+# A curated, self-hosted stack covering media, photos, AI,
+# productivity, security, observability and reverse proxy.
+# Every container runs with `no-new-privileges` and binds only
+# to the LAN interface.
 #
 # Setup:  cp .env.example .env  →  edit  →  docker compose up -d
 # ────────────────────────────────────────────────────────────
@@ -54,6 +55,48 @@ services:
       - "${LAN_IP}:8092:8080"
     volumes:
       - ${APPDATA_DIR}/glance/glance.yml:/app/config/glance.yml
+      - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
+    networks: [default]
+
+  # 3 themed Glance instances are embedded as iframes on the Homepage FEED tab.
+  # Custom JS swaps the active iframe based on the selected Homepage theme.
+  glance-deepspace:
+    image: glanceapp/glance:latest
+    container_name: glance-deepspace
+    restart: always
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:8093:8080"
+    volumes:
+      - ${APPDATA_DIR}/glance/glance.deepspace.yml:/app/config/glance.yml:ro
+      - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
+      - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
+    networks: [default]
+
+  glance-tokyo:
+    image: glanceapp/glance:latest
+    container_name: glance-tokyo
+    restart: always
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:8094:8080"
+    volumes:
+      - ${APPDATA_DIR}/glance/glance.tokyo.yml:/app/config/glance.yml:ro
+      - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
+      - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
+    networks: [default]
+
+  glance-amber:
+    image: glanceapp/glance:latest
+    container_name: glance-amber
+    restart: always
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "${LAN_IP}:8095:8080"
+    volumes:
+      - ${APPDATA_DIR}/glance/glance.amber.yml:/app/config/glance.yml:ro
+      - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
+      - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
     networks: [default]
 
   # ── Docker management ────────────────────────────────────
@@ -358,6 +401,124 @@ services:
       - ${APPDATA_DIR}/immich/postgres:/var/lib/postgresql/data
     networks: [default]
 
+  # ── Files & sync (Nextcloud) ─────────────────────────────
+  # Three-container stack: app (apache), Postgres 16, Redis 7.
+  # External storage at ${STORAGE_DIR}/Nextcloud is mounted read-write so users
+  # can browse host-side directories (e.g. per-device backup folders) directly.
+  nextcloud:
+    image: nextcloud:30-apache
+    container_name: nextcloud
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - POSTGRES_HOST=nextcloud-db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASS}
+      - REDIS_HOST=nextcloud-redis
+      - REDIS_HOST_PASSWORD=${NEXTCLOUD_REDIS_PASS}
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASS}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_DOMAIN} ${LAN_IP}
+      - TRUSTED_PROXIES=172.18.0.0/16
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITEHOST=${NEXTCLOUD_DOMAIN}
+      - OVERWRITECLIURL=https://${NEXTCLOUD_DOMAIN}
+      - PHP_MEMORY_LIMIT=1G
+      - PHP_UPLOAD_LIMIT=10G
+      - TZ=${TZ}
+    volumes:
+      - ${APPDATA_DIR}/nextcloud/html:/var/www/html
+      - ${STORAGE_DIR}/Nextcloud:/external/storage:rw
+    ports:
+      - "${LAN_IP}:8081:80"
+    depends_on: [nextcloud-db, nextcloud-redis]
+    networks: [default]
+
+  nextcloud-db:
+    image: postgres:16-alpine
+    container_name: nextcloud-db
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASS}
+      - POSTGRES_DB=nextcloud
+    volumes:
+      - ${APPDATA_DIR}/nextcloud-db:/var/lib/postgresql/data
+    networks: [default]
+
+  nextcloud-redis:
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: always
+    security_opt: [no-new-privileges:true]
+    command: redis-server --requirepass ${NEXTCLOUD_REDIS_PASS}
+    volumes:
+      - ${APPDATA_DIR}/nextcloud-redis:/data
+    networks: [default]
+
+  # ── Local LLM stack (GPU) ────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_KEEP_ALIVE=10m
+    volumes:
+      - ${APPDATA_DIR}/ollama:/root/.ollama
+    ports:
+      - "${LAN_IP}:11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [default]
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+      - WEBUI_AUTH=true
+      - ENABLE_SIGNUP=true
+      - DEFAULT_USER_ROLE=pending
+    volumes:
+      - ${APPDATA_DIR}/open-webui:/app/backend/data
+    ports:
+      - "${LAN_IP}:3333:8080"
+    depends_on: [ollama]
+    networks: [default]
+
+  # ── Speech-to-text (GPU) ─────────────────────────────────
+  # Used by Bazarr for offline subtitle generation from Plex audio tracks.
+  faster-whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+    container_name: faster-whisper
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
+      - ASR_MODEL=small
+      - ASR_ENGINE=faster_whisper
+    ports:
+      - "${LAN_IP}:9001:9000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks: [default]
+
   # ── Network-wide DNS / ad-blocking ───────────────────────
   adguardhome:
     image: adguard/adguardhome
@@ -370,26 +531,6 @@ services:
       - ${APPDATA_DIR}/adguard/conf:/opt/adguardhome/conf
 
   # ── Security ─────────────────────────────────────────────
-  crowdsec:
-    image: crowdsecurity/crowdsec:latest
-    container_name: crowdsec
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    environment:
-      - GID=${PGID}
-      - COLLECTIONS=crowdsecurity/linux crowdsecurity/sshd crowdsecurity/nginx
-      - TZ=${TZ}
-      - DOCKER_HOST=tcp://docker-proxy:2375
-    volumes:
-      - ${APPDATA_DIR}/crowdsec/config:/etc/crowdsec
-      - ${APPDATA_DIR}/crowdsec/data:/var/lib/crowdsec/data
-      - /var/log:/var/log:ro
-      - ${APPDATA_DIR}/npm/data/logs:/npm-logs:ro
-    ports:
-      - "${LAN_IP}:8881:8080"
-    depends_on: [docker-proxy]
-    networks: [default]
-
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared

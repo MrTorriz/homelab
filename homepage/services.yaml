@@ -2,8 +2,10 @@
 #
 # Replace `example.com` with your domain before deploying.
 # `container:` entries are auto-discovered via the docker-socket-proxy.
+# `{{HOMEPAGE_VAR_*}}` placeholders are pulled from Homepage's own .env.
 
-# ── Row 1: Infrastructure ────────────────────────────────
+# ── Tab 1: DECK ─────────────────────────────────────────────
+# Row 1 — 4 balanced groups (Network / System / Media / Links)
 
 - Network:
     - AdGuard Home:
@@ -11,76 +13,159 @@
         href: https://adguard.example.com
         container: adguardhome
         description: DNS filtering & ad blocking
+        widget:
+          type: adguard
+          url: http://${LAN_IP}:3000
+          username: '{{HOMEPAGE_VAR_ADGUARD_USERNAME}}'
+          password: '{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}'
+          fields: ["queries", "blocked", "filtered"]
     - Nginx Proxy Manager:
         icon: nginx-proxy-manager.png
         href: https://npm.example.com
         container: npm
         description: Reverse proxy & SSL certs
-    - Router:
-        icon: mdi-router-wireless
-        href: https://router.example.com
-        ping: 192.168.1.1
-        description: Gateway
-
-- Docker:
-    - Portainer:
-        icon: portainer.png
-        href: https://portainer.example.com
-        container: portainer
-    - Dozzle:
-        icon: dozzle.png
-        href: https://dozzle.example.com
-        container: dozzle
-    - Watchtower:
-        icon: watchtower.png
-        container: watchtower
-        description: Auto-updates nightly
-    - FlareSolverr:
-        icon: flaresolverr.png
-        container: flaresolverr
-
-- Security:
-    - CrowdSec:
-        icon: crowdsec.png
-        container: crowdsec
-        description: Behavioural IPS
+        widget:
+          type: npm
+          url: http://npm:81
+          username: '{{HOMEPAGE_VAR_NPM_USERNAME}}'
+          password: '{{HOMEPAGE_VAR_NPM_PASSWORD}}'
     - Cloudflared:
         icon: cloudflare.png
+        href: https://one.dash.cloudflare.com
         container: cloudflared
-        description: Zero-trust tunnel
-
-- System:
-    - Glances:
-        icon: sh-glances.png
-        href: https://glances.example.com
-        container: glances
-    - Scrutiny:
-        icon: scrutiny.png
-        href: https://scrutiny.example.com
-        container: scrutiny
-        description: SMART monitoring
+        description: Tunnel & Zero Trust access
+        widget:
+          type: cloudflared
+          accountid: '{{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNT}}'
+          tunnelid: '{{HOMEPAGE_VAR_CLOUDFLARED_TUNNEL}}'
+          key: '{{HOMEPAGE_VAR_CLOUDFLARED_KEY}}'
+          fields: ["status"]
     - Speedtest Tracker:
         icon: speedtest-tracker.png
         href: https://speedtest.example.com
         container: speedtest
+        description: Internet speed monitoring
+        widget:
+          type: speedtest
+          url: http://speedtest:80
+          fields: ["download", "upload"]
 
-# ── Row 2: Media ─────────────────────────────────────────
+- System:
+    - Portainer:
+        icon: portainer.png
+        href: https://portainer.example.com
+        container: portainer
+        description: Container management
+        widget:
+          type: portainer
+          url: http://portainer:9000
+          env: 3
+          key: '{{HOMEPAGE_VAR_PORTAINER_KEY}}'
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.example.com
+        container: dozzle
+        description: Container logs
+    - Nextcloud:
+        icon: nextcloud.png
+        href: https://cloud.example.com
+        container: nextcloud
+        description: Files, calendar & contacts
+    - Scrutiny:
+        icon: scrutiny.png
+        href: https://scrutiny.example.com
+        container: scrutiny
+        description: Disk health monitoring
 
-- Streaming:
+- Media:
     - Plex:
         icon: plex.png
         href: https://plex.example.com
         container: plex
+        description: Media streaming server
+        widget:
+          type: plex
+          url: http://${LAN_IP}:32400
+          key: '{{HOMEPAGE_VAR_PLEX_TOKEN}}'
+          fields: ["albums", "movies", "tv"]
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: https://qbittorrent.example.com
+        container: qbittorrent
+        description: Torrent client (VPN-bound)
+        widget:
+          type: qbittorrent
+          url: http://${LAN_IP}:8080
+          username: '{{HOMEPAGE_VAR_QBIT_USER}}'
+          password: '{{HOMEPAGE_VAR_QBIT_PASS}}'
+          fields: ["leech", "seed", "download"]
     - Audiobookshelf:
         icon: audiobookshelf.png
         href: https://abs.example.com
         container: audiobookshelf
+        description: Audiobook library
+        widget:
+          type: audiobookshelf
+          url: http://audiobookshelf:80
+          key: '{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}'
+          fields: ["books"]
+    - Immich:
+        icon: immich.png
+        href: https://immich.example.com
+        container: immich_server
+        description: Photo & video backup
+        widget:
+          type: immich
+          url: http://immich_server:2283
+          key: '{{HOMEPAGE_VAR_IMMICH_KEY}}'
+          version: 2
+          fields: ["users", "photos", "videos"]
 
-- Automation:
+- Links:
+    - Ntfy:
+        icon: ntfy.png
+        href: https://ntfy.example.com
+        container: ntfy
+        description: Push notifications
+    - IT-Tools:
+        icon: it-tools.png
+        href: https://tools.example.com
+        container: it-tools
+        description: Developer utilities
+    - Draw.io:
+        icon: drawio.png
+        href: https://drawio.example.com
+        container: drawio
+        description: Network & system diagrams
+    - LLM:
+        icon: mdi-chat-processing
+        href: https://chat.example.com
+        container: open-webui
+        description: Local chat UI (Ollama)
+    - Faster Whisper:
+        icon: si-openai
+        href: https://whisper.example.com
+        container: faster-whisper
+        description: Speech-to-text (GPU)
+
+# Row 2 — *arr stack full-width
+
+- "*arr Stack":
+    - Seerr:
+        icon: overseerr
+        href: https://seerr.example.com
+        container: seerr
+        description: Media requests
+        widget:
+          type: overseerr
+          url: http://seerr:5055
+          key: '{{HOMEPAGE_VAR_OVERSEERR_KEY}}'
+          fields: ["processing", "available"]
     - Sonarr:
         icon: sonarr.png
         href: https://sonarr.example.com
         container: sonarr
+        description: TV series management
         widget:
           type: sonarr
           url: http://sonarr:8989
@@ -89,62 +174,64 @@
         icon: radarr.png
         href: https://radarr.example.com
         container: radarr
+        description: Movie management
         widget:
           type: radarr
           url: http://radarr:7878
           key: '{{HOMEPAGE_VAR_RADARR_KEY}}'
+          fields: ["wanted", "missing", "queued"]
     - Lidarr:
         icon: lidarr.png
         href: https://lidarr.example.com
         container: lidarr
+        description: Music management
+        widget:
+          type: lidarr
+          url: http://lidarr:8686
+          key: '{{HOMEPAGE_VAR_LIDARR_KEY}}'
     - Bazarr:
         icon: bazarr.png
         href: https://bazarr.example.com
         container: bazarr
+        description: Subtitle management
+        widget:
+          type: bazarr
+          url: http://bazarr:6767
+          key: '{{HOMEPAGE_VAR_BAZARR_KEY}}'
+          fields: ["missingEpisodes"]
     - Prowlarr:
         icon: prowlarr.png
         href: https://prowlarr.example.com
         container: prowlarr
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: https://qbittorrent.example.com
-        container: qbittorrent
-        description: VPN-bound (killswitch)
-
-- Pipeline:
+        description: Indexer management
+        widget:
+          type: prowlarr
+          url: http://prowlarr:9696
+          key: '{{HOMEPAGE_VAR_PROWLARR_KEY}}'
+          fields: ["numberOfGrabs", "numberOfQueries"]
     - Tdarr:
         icon: tdarr.png
         href: https://tdarr.example.com
         container: tdarr
-        description: Transcode pipeline (NVENC)
-    - Seerr:
-        icon: jellyseerr.png
-        href: https://seerr.example.com
-        container: seerr
-        description: Request UI
+        description: Transcoding
+        widget:
+          type: tdarr
+          url: http://tdarr:8265
+          fields: ["queue", "errored"]
+    - FlareSolverr:
+        icon: flaresolverr.png
+        container: flaresolverr
+        description: Cloudflare bypass
 
-# ── Row 3: Photos & utilities ────────────────────────────
+# ── Tab 2: FEED ─────────────────────────────────────────────
+# Three themed Glance instances embedded as iframes.
+# custom.js swaps the iframe src based on the active Homepage theme
+# (default → glance-deepspace, tokyo → glance-tokyo, amber → glance-amber).
 
-- Photos:
-    - Immich:
-        icon: immich.png
-        href: https://immich.example.com
-        container: immich_server
-
-- Utilities:
-    - Miniflux:
-        icon: miniflux.png
-        href: https://rss.example.com
-        container: miniflux
-    - ntfy:
-        icon: ntfy.png
-        href: https://ntfy.example.com
-        container: ntfy
-    - IT-Tools:
-        icon: it-tools.png
-        href: https://tools.example.com
-        container: it-tools
-    - draw.io:
-        icon: drawio.png
-        href: https://drawio.example.com
-        container: drawio
+- Glance:
+    - News & Tech:
+        icon: mdi-newspaper-variant-multiple
+        widget:
+          type: iframe
+          src: https://glance.example.com
+          classes: h-full
