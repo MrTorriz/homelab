@@ -83,9 +83,11 @@ This is more elegant than running a sidecar that pre-aggregates — Homepage tal
 
 ---
 
-## Events layer — seven ntfy sources
+## Events layer — about 20 ntfy callers
 
 The metrics layer answers "what is happening?". The events layer answers "what *just happened* that I need to know about *right now*?".
+
+The high-signal layer is **seven security event sources** — these are the ones that wake you up in the middle of the night:
 
 | Source | Trigger | Hook | Priority |
 |---|---|---|---|
@@ -97,7 +99,24 @@ The metrics layer answers "what is happening?". The events layer answers "what *
 | `npm-monitor` | path scans, 401 spam, sqlmap signatures | systemd unit tailing NPM access logs | high |
 | `file-watcher` | mutation in critical paths (sshd config, sudoers, cron, authorized_keys) | systemd unit on inotify | urgent |
 
-Together that's seven independent triggers. The interesting design choice is that **every** successful SSH login pushes — not just failed ones. Failed logins are noise (UFW already drops most of them); successful logins are tripwires. If a notification arrives that you didn't initiate, you have seconds to react.
+In addition there are **operational alerters** that share the same ntfy infrastructure but run on a schedule rather than on events:
+
+| Source | Frequency | Purpose |
+|---|---|---|
+| `healthcheck` | every 15 min | container/VPN/DNS/disk safety net |
+| `restart-loop-monitor` | every 5 min | catches flapping containers |
+| `temp-monitor` | every 30 min | CPU/GPU thresholds |
+| `mullvad-rotate` | every 6 h | confirms VPN exit IP changed |
+| `cert-expiry` | weekly (Mon) | SSL cert deadlines via NPM API |
+| `virus-scan` | weekly (Sun) | ClamAV scan summary |
+| `security-digest` | weekly (Sun) | fail2ban + lynis + UFW summary |
+| `weekly-report` | weekly (Sun) | health snapshot |
+| `storage-report` | weekly (Mon) | disk growth |
+| `backup-verify` | weekly (Mon) | restore-test result |
+| `backup-appdata` | nightly | snapshot result |
+| `offsite-backup` | nightly | rclone push result |
+
+Together that's **roughly 20 distinct callers** to a single shared `ntfy_send` shim. The interesting design choice in the event tier is that **every** successful SSH login pushes — not just failed ones. Failed logins are noise (UFW already drops most of them); successful logins are tripwires. If a notification arrives that you didn't initiate, you have seconds to react.
 
 ### Admin-noise filtering
 

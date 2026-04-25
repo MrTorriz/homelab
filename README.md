@@ -39,7 +39,7 @@ Single-host homelab on Ubuntu 24.04, ~50 Dockerised services, behind Nginx Proxy
 
 - **Defense-in-depth:** UFW default-deny, Suricata IDS (passive monitoring), fail2ban (SSH brute-force), SSH key-only on a non-default port, `no-new-privileges` on every container, Docker socket proxy, VPN-bound torrent traffic with killswitch.
 - **Zero open inbound ports:** external access goes through Cloudflare Tunnel + Google OAuth — the home IP never appears in DNS.
-- **Event-driven alerting:** seven distinct sources (SSH login, sudo, fail2ban, Suricata, Docker events, NPM access, file watcher) push to ntfy → iPhone in seconds — admin-noise filtered out.
+- **Event-driven alerting:** 7 high-signal security sources (SSH login, sudo, fail2ban, Suricata, Docker events, NPM access, file watcher) plus ~13 operational alerters (healthcheck, temp, backup, cert-expiry, etc.) — ~20 callers behind one shared ntfy shim, admin-noise filtered out.
 - **Power-aware monitoring:** Prometheus + Grafana + Scaphandre measure actual wattage (CPU/RAM via Intel RAPL, GPU via nvidia-smi). The cost panel parameterises electricity price.
 - **Idempotent deploys:** rsync `--checksum` from git → live, conditional service reloads, validation gates on SSH config.
 - **Observability:** Glances, Scrutiny (SMART), Speedtest Tracker, periodic healthcheck → ntfy.
@@ -81,7 +81,7 @@ Full per-service catalogue: [`docker/README.md`](docker/README.md)
 
 ```text
 .
-├── docker/              # Compose stack (~35 services) + .env.example
+├── docker/              # Compose stack (~50 services) + .env.example
 ├── homepage/            # Dashboard config (services + widgets)
 ├── scripts/             # deploy, healthcheck, backup/, security/, monitoring/, maintenance/, motd/, systemd/
 ├── security/            # UFW, fail2ban, SSH, hardening checklist
@@ -121,7 +121,7 @@ External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:44
 
 - [`docs/architecture.md`](docs/architecture.md) — How traffic, storage, and trust flow through the system
 - [`docs/security.md`](docs/security.md) — Defense-in-depth model + STRIDE analysis
-- [`docs/observability.md`](docs/observability.md) — Three-layer model: metrics (Prometheus + Grafana + Scaphandre), events (7 ntfy sources), health (healthcheck cron)
+- [`docs/observability.md`](docs/observability.md) — Three-layer model: metrics (Prometheus + Grafana + Scaphandre), events (~20 ntfy callers across 7 security + 13 operational sources), health (healthcheck cron)
 - [`docs/metrics.md`](docs/metrics.md) — What the system actually catches (real numbers)
 - [`docs/runbook.md`](docs/runbook.md) — Incident playbooks: what to do at 03:00
 - [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + zero-to-running restore

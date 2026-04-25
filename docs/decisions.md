@@ -46,16 +46,19 @@ Single host, no rolling deploys needed, no autoscaling. Compose is the right too
 
 Most containers update cleanly. The few that don't (Plex, NPM, Immich, Postgres) are tagged `com.centurylinklabs.watchtower.enable=false` and updated manually. This inverts the usual "manual by default, auto for safe ones" — it's faster to maintain because new services join the auto-update set automatically.
 
-## Monitoring: Glances + Scrutiny + custom healthcheck, not Prometheus
+## Monitoring: Prometheus + Grafana, paired with bash healthcheck and event-driven ntfy
 
-Prometheus + Grafana + node_exporter is the obvious stack. For a homelab it's overkill:
-- Glances answers "what's the host doing right now?"
-- Scrutiny answers "are the disks dying?"
-- A bash healthcheck answers "did anything I care about stop working?" → ntfy push
+The original setup was deliberately minimal — Glances + Scrutiny + a bash healthcheck pushing to ntfy. That answered "is anything broken right now?" but said nothing about *trends*. You don't notice GPU temp creeping up 4°C per month until something dies; you don't see idle wattage drift until the next electricity bill.
 
-Total maintenance: zero. Total dashboards to babysit: zero.
+So the stack now runs **three independent monitoring layers**:
 
-If this ever needs trends-over-time, Prometheus is easy to add later.
+1. **Metrics** — Prometheus (90 d retention, 15 s scrape) + Grafana, fed by node-exporter, cAdvisor, Scaphandre (Intel RAPL → CPU+RAM watts) and nvidia-gpu-exporter. The dashboard answers "what's the host doing over time?" and includes a power-cost panel parameterised by electricity price.
+2. **Events** — about 20 distinct ntfy callers (cron jobs + systemd daemons + PAM hooks). Answers "what just happened that I need to know about?" — every SSH login, sudo, fail2ban ban, Suricata signature hit, Docker event, NPM scan, file-watch trigger pushes to iPhone in seconds.
+3. **Health** — bash `healthcheck.sh` cron every 15 minutes. Answers "is anything broken?" — the safety net for things metrics + events miss (e.g. a container that lies about being healthy).
+
+The three layers are mutually independent. If Prometheus goes down, ntfy alerters still fire and the bash healthcheck still runs. That's the point — no single monitoring tool can fail and silence the whole stack.
+
+The earlier "Prometheus is overkill" stance was correct *until* the stack grew big enough that trends started to matter — Immich GPU usage, Nextcloud disk growth, Plex transcode wattage. At that point the cost-of-operation flips: the maintenance burden is small (provisioned dashboard, no manual creation), and the visibility gain is real.
 
 ## Backups: rsync nightly, off-site weekly
 
