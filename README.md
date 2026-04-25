@@ -121,7 +121,7 @@ External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:44
 
 - [`docs/architecture.md`](docs/architecture.md) — How traffic, storage, and trust flow through the system
 - [`docs/security.md`](docs/security.md) — Defense-in-depth model + STRIDE analysis
-- [`docs/observability.md`](docs/observability.md) — Three-layer model: metrics (Prometheus + Grafana + Scaphandre), events (~20 ntfy callers across 7 security + 13 operational sources), health (healthcheck cron)
+- [`docs/observability.md`](docs/observability.md) — Three-layer model: metrics (Prometheus + Grafana + Scaphandre), events (~20 ntfy callers across 7 security + 13 operational sources), health (healthcheck cron) — [dashboard screenshot](docs/img/grafana-overview.png)
 - [`docs/metrics.md`](docs/metrics.md) — What the system actually catches (real numbers)
 - [`docs/runbook.md`](docs/runbook.md) — Incident playbooks: what to do at 03:00
 - [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + zero-to-running restore

@@ -18,6 +18,13 @@ The metrics layer is the new addition. It exists because periodic healthcheck on
 
 ## Metrics layer — Prometheus + Grafana
 
+<p align="center">
+  <img src="img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard, twelve panels covering power, energy, cost, CPU, memory, disk and network" width="900"/>
+</p>
+
+> Captured from an ephemeral demo stack with synthetic metrics — see
+> [`../monitoring/demo/`](../monitoring/demo/). Same dashboard JSON, fabricated values.
+
 Six containers, scraped on a 15-second interval, retained for 90 days:
 
 | Container | Image | What it exports | Notes |

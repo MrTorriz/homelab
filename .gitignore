@@ -22,3 +22,6 @@ JOURNAL.md
 
 # Lokal referensfil — skills/plugins vi använder i sessionen, ska aldrig pushas
 TOOLS.md
+
+# Playwright MCP debug artifacts (console logs, page snapshots)
+.playwright-mcp/
