@@ -341,17 +341,15 @@
        FLOW ARROWS — data / observability (1px blue dashed)
        ================================================================ -->
   <g stroke="#7eb3d9" stroke-width="1.2" stroke-dasharray="4,3" fill="none">
-    <!-- ntfy → iPhone (push via APNs) — orthogonal route around all boxes:
-         up through col2-col3 gap (x=575), left across inter-band (y=380),
-         up through CF↔NPM gap (x=415), right under Internet boxes (y=180) -->
+    <!-- ntfy → iPhone (push via APNs) — only remaining out-of-band signal arrow.
+         Orthogonal route around all boxes: up through col2-col3 gap (x=575),
+         left across inter-band (y=380), up through CF↔NPM gap (x=415),
+         right under Internet boxes (y=180). -->
     <path d="M 522 575 L 575 575 L 575 380 L 415 380 L 415 180 L 475 180 L 475 161" marker-end="url(#arrowBlue)" stroke-opacity="0.85"/>
-    <!-- observability scrapes apps -->
-    <path d="M 810 470 L 780 470" marker-end="url(#arrowBlue)"/>
-    <path d="M 810 510 L 780 510" marker-end="url(#arrowBlue)"/>
-    <path d="M 810 555 L 780 555" marker-end="url(#arrowBlue)"/>
-    <!-- apps→storage arrows removed: Dozzle/Watchtower/healthcheck don't
-         actually persist to bulk HDDs — Storage band's position directly
-         under HOST already implies the persistence relationship -->
+    <!-- Observability scrape arrows + apps→storage arrows all removed:
+         column grouping (Detection / Applications / Observability) and band
+         stacking already convey those relationships without misleading
+         per-container arrows. -->
   </g>
 
   <!-- ================================================================
@@ -377,7 +375,7 @@
     <text x="42" y="24" font-size="9" fill="#aaa">control / ingress</text>
 
     <line x1="180" y1="20" x2="214" y2="20" stroke="#7eb3d9" stroke-width="1.2" stroke-dasharray="4,3"/>
-    <text x="222" y="24" font-size="9" fill="#aaa">data / metrics</text>
+    <text x="222" y="24" font-size="9" fill="#aaa">alert / signal</text>
 
     <line x1="350" y1="20" x2="384" y2="20" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="5,2"/>
     <text x="392" y="24" font-size="9" fill="#aaa">VPN-bound</text>
