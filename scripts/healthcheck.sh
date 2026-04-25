@@ -28,7 +28,7 @@ EXPECTED=(
   immich_server immich_machine_learning immich_redis immich_postgres
   miniflux miniflux-db
   adguardhome glances scrutiny speedtest
-  crowdsec cloudflared
+  cloudflared
   ntfy it-tools drawio
 )
 running=$(docker ps --format '{{.Names}}')
