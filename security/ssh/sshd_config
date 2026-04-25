@@ -10,6 +10,10 @@ Port 2222
 AddressFamily inet
 Protocol 2
 
+# Optionally pin sshd to a specific NIC/IP (e.g. the LAN address)
+# so it's never reachable on a VPN tap or second interface.
+#ListenAddress 192.168.1.5
+
 # Auth — keys only
 PermitRootLogin no
 PasswordAuthentication no

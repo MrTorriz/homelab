@@ -1,0 +1,177 @@
+%YAML 1.1
+---
+# ─────────────────────────────────────────────────────────────
+# Suricata configuration — homelab passive-IDS profile
+#
+# This is a TRIMMED example (~150 lines) covering the knobs that
+# differ from upstream defaults. The real upstream config is
+# ~2000 lines of comments — install the package and use this
+# as an overlay/diff reference.
+#
+# Place at /etc/suricata/suricata.yaml and validate with:
+#   suricata -T -c /etc/suricata/suricata.yaml -v
+# ─────────────────────────────────────────────────────────────
+
+suricata-version: "7.0"
+
+vars:
+  address-groups:
+    # Cover RFC1918 + Docker bridges. Tighten to your LAN if you
+    # want fewer false positives from container chatter.
+    HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+    EXTERNAL_NET: "!$HOME_NET"
+
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "$HOME_NET"
+    DNS_SERVERS: "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+
+  port-groups:
+    HTTP_PORTS: "80"
+    SHELLCODE_PORTS: "!80"
+    SSH_PORTS: 2222          # match the hardened sshd port
+    FTP_PORTS: 21
+    FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
+
+# ─── Output ──────────────────────────────────────────────────
+default-log-dir: /var/log/suricata/
+
+outputs:
+  # Snort-style fast.log — what suricata-ntfy.service tails.
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
+
+  # EVE JSON — structured log for SIEM/Loki ingestion.
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      community-id: true
+      community-id-seed: 0
+      types:
+        - alert:
+            tagged-packets: yes
+            metadata: yes
+            http-body: yes
+            http-body-printable: yes
+        - anomaly:
+            enabled: yes
+            types:
+              decode: yes
+              stream: yes
+              applayer: yes
+        - http:
+            extended: yes
+        - dns:
+            query: yes
+            answer: yes
+        - tls:
+            extended: yes
+        - ssh
+        - flow
+        - netflow
+        - stats:
+            totals: yes
+            threads: no
+            deltas: no
+
+  - stats:
+      enabled: yes
+      filename: stats.log
+      append: yes
+
+# ─── Capture ─────────────────────────────────────────────────
+# Replace ${LAN_IFACE} with the real NIC (eth0, ens3, …) or
+# template this file with envsubst before deploy.
+af-packet:
+  - interface: ${LAN_IFACE}
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+
+# ─── App-layer protocol parsers ──────────────────────────────
+# Only enable parsers for protocols you actually expect — fewer
+# false positives, cheaper detection.
+app-layer:
+  protocols:
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+    http:
+      enabled: yes
+    http2:
+      enabled: yes
+    ssh:
+      enabled: yes
+    smb:
+      enabled: yes
+      detection-ports:
+        dp: 139, 445
+    nfs:
+      enabled: yes
+    rdp:
+      enabled: yes
+    dns:
+      enabled: yes
+    ftp:
+      enabled: yes
+    mqtt:
+      enabled: yes
+    bittorrent-dht:
+      enabled: yes
+
+# ─── Detection engine ────────────────────────────────────────
+# 'high' profile preallocates more state but reacts faster on
+# busy links. Drop to 'medium' on a small home host.
+detect:
+  profile: high
+  custom-values:
+    toclient-groups: 3
+    toserver-groups: 25
+  sgh-mpm-context: auto
+  inspection-recursion-limit: 3000
+
+# ─── Performance tuning ──────────────────────────────────────
+# `auto` picks Hyperscan if available, else AC. On modern Intel
+# you'll usually land on `hs`.
+mpm-algo: auto
+spm-algo: auto
+
+threading:
+  set-cpu-affinity: no
+  detect-thread-ratio: 1.0
+
+# ─── Rules ───────────────────────────────────────────────────
+default-rule-path: /var/lib/suricata/rules
+rule-files:
+  - suricata.rules     # produced by `suricata-update`
+
+# Classification + reference metadata
+classification-file: /etc/suricata/classification.config
+reference-config-file: /etc/suricata/reference.config
+
+# ─── Engine analysis ─────────────────────────────────────────
+engine-analysis:
+  rules-fast-pattern: yes
+  rules: yes
+
+# ─── Logging (engine, not alerts) ────────────────────────────
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        level: info
+        filename: /var/log/suricata/suricata.log
+    - syslog:
+        enabled: no
+        facility: local5
+        format: "[%i] <%d> -- "
