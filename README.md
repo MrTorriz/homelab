@@ -14,6 +14,7 @@
 
 [![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](#)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu_24.04-E95420?style=flat-square&logo=ubuntu&logoColor=white)](#)
+[![Proxmox VE](https://img.shields.io/badge/Proxmox_VE-E57000?style=flat-square&logo=proxmox&logoColor=white)](https://github.com/MrTorriz/proxmox-homelab)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](#)
 [![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white)](#)
 [![Suricata](https://img.shields.io/badge/Suricata_IDS-DC322F?style=flat-square&logoColor=white)](#)
@@ -33,6 +34,8 @@
 <p align="center">
   <img src="docs/img/architecture.svg" alt="Homelab architecture — Internet → edge perimeter → Docker host (detection, applications, observability) → storage, with WireGuard tunnel as parallel sidoline" width="900"/>
 </p>
+
+> **Runs virtualized.** This whole stack is the `docker-host` VM on a Proxmox host — the RTX 2060 and both HDDs are handed to it via passthrough. The hypervisor layer (VM fleet, GPU/disk passthrough, fail-closed VPN gateway) is documented in **[proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)**.
 
 ---
 
