@@ -1,6 +1,6 @@
 # Architecture
 
-A single-host homelab with a strong perimeter, isolated egress for risky workloads, and a small but consistent set of internal abstractions.
+A single-host homelab with a strong perimeter, isolated egress for risky workloads, and a small but consistent set of internal abstractions. The stack runs inside one VM (`docker-host`) on a Proxmox host — the [virtualization layer](https://github.com/MrTorriz/proxmox-homelab) (VM fleet, GPU + whole-disk passthrough, VPN gateway) is documented separately; everything below is the view from inside that VM.
 
 ## Network topology
 
@@ -12,7 +12,7 @@ flowchart TB
     end
     subgraph LAN[LAN 192.168.x.0/24]
         SW[L2 switch]
-        Host[Docker host]
+        Host["Docker host (VM)"]
         Clients[Phones · TVs · laptops]
     end
 
@@ -29,12 +29,12 @@ flowchart TB
 
 **Key properties:**
 - **Zero open inbound ports** at the router. External access goes through Cloudflare Tunnel + Google OAuth.
-- **All LAN DNS** is intercepted by AdGuard Home (running on the host). The ISP-issued resolver is never used.
+- **All LAN DNS** is intercepted by AdGuard Home (running in the `docker-host` VM). The ISP-issued resolver is never used.
 - **Risky egress** (torrent traffic) is locked to the WireGuard interface — if VPN drops, traffic stops (see `../security/vpn-killswitch.md`).
 
 ## Storage
 
-Three logical tiers on the host:
+Three logical tiers, as the VM sees them (the two HDDs are whole-disk passthrough from the Proxmox host):
 
 | Mount | Type | Purpose |
 |---|---|---|
@@ -108,7 +108,7 @@ No port forwarding. The home IP is never resolvable from public DNS.
 
 A multi-host setup would buy redundancy at the cost of operational surface area. For a homelab:
 
-- One host means one OS to harden, one cron to maintain, one set of backups to verify.
+- One box means a small surface: the workload is a single VM to harden, one cron to maintain, one set of backups to verify — the hypervisor beneath it is deliberately minimal ([proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)).
 - The host is well within capacity for the workload (CPU rarely above 30%, RAM usage steady, GPU only loaded during transcodes).
 - Failure mode is acceptable: media is replaceable, photos are off-site backed up, *arr config is in `${APPDATA_DIR}` (backed up nightly).
 

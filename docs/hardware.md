@@ -1,6 +1,6 @@
 # Hardware
 
-A small, single-host setup that comfortably runs the full stack with headroom.
+A small, single-box setup that comfortably runs the full stack with headroom. Since the [Proxmox migration](https://github.com/MrTorriz/proxmox-homelab) this hardware is the **hypervisor host**; the Docker stack runs in one VM (`docker-host`) that receives the GPU and both HDDs via passthrough. The specs below are the physical box — i.e. the pool the hypervisor draws the VM's slice from.
 
 ## The honest framing
 
@@ -8,7 +8,9 @@ This rig is a **repurposed desktop**, not a deliberate homelab build. It started
 
 So this page is about *what's actually here* and *whether it's adequate* — not retroactive justification of choices that were never made. The economics of buying-new-vs-using-what-you-have heavily favoured reuse, and the spec turned out to be more than enough for the workload.
 
-## Host
+## The box (Proxmox host)
+
+The physical machine below is the Proxmox host. The GPU and both HDDs are passed through to the `docker-host` VM — where the stack actually runs — and the VM boots from a thin volume on the NVMe. It is capped at 8 GB of the box's 16 GB (the rest is host + lab VMs; see [proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)).
 
 | Component | Spec | Role |
 |---|---|---|
@@ -29,7 +31,7 @@ The HDDs are monitored by Scrutiny via SMART. NVMe wear is tracked separately.
 | Switch | L2 unmanaged Gigabit |
 | Host NIC | 1 GbE |
 
-The host is a wired client — no Wi-Fi role. AdGuard Home runs on the host and serves DNS for the whole LAN.
+The box is a wired client — no Wi-Fi role. AdGuard Home runs in the `docker-host` VM and serves DNS for the whole LAN.
 
 ## Adequate, not optimal
 
@@ -48,7 +50,7 @@ At current load:
 | Resource | Used | Available |
 |---|---|---|
 | CPU | ~10% avg, peaks to ~60% during transcodes | Comfortable |
-| RAM | ~9 GB / 16 GB | Comfortable |
+| RAM | ~9 GB / 16 GB on the box (VM slice capped at 8 GB) | Comfortable |
 | GPU VRAM | ~2 GB / 6 GB | Plenty |
 | `${MEDIA_DIR}` | ~80% | Tight — next upgrade target |
 | `${STORAGE_DIR}` | ~50% | Comfortable |
