@@ -3,8 +3,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
       time: "08:00"
       timezone: Europe/Stockholm
     commit-message:
@@ -13,6 +12,12 @@ updates:
       - dependencies
       - github-actions
     open-pull-requests-limit: 5
+    # One PR for all action bumps instead of one per action. This repo only
+    # runs linters in CI, so a single batched review per month is enough.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
 # docker ecosystem removed — Dependabot's "docker" ecosystem only monitors
 # Dockerfiles, not docker-compose image tags. For compose tag updates,
