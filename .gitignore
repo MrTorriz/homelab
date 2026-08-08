@@ -14,16 +14,11 @@ backups/
 .idea/
 .vscode/
 
-# Local context file — never pushed
-
 # Local working journal — never pushed
 JOURNAL.md
 
 # Local tooling reference — never pushed
 TOOLS.md
-
-# Playwright artifacts (console logs, page snapshots)
-.playwright-mcp/
 
 # Personal sanitisation patterns — read by scripts/sanitize-check.sh
 # .sanitize-patterns.example is committed as a template
