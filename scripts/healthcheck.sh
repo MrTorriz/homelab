@@ -20,14 +20,17 @@ DOMAIN="${DOMAIN:-example.com}"
 ERRORS=()
 
 # ── 1. Containers ──
+# 43 names = every service in docker/compose.yml (2026-08-28).
 EXPECTED=(
-  homepage glance npm
-  portainer dozzle watchtower docker-proxy
-  plex sonarr radarr lidarr bazarr prowlarr flaresolverr
+  homepage glance glance-amber npm
+  portainer dozzle watchtower diun docker-proxy docker-proxy-rw
+  jellyfin sonarr radarr lidarr bazarr prowlarr flaresolverr
   qbittorrent tdarr seerr audiobookshelf
   immich_server immich_machine_learning immich_redis immich_postgres
+  nextcloud nextcloud-db nextcloud-redis
   miniflux miniflux-db
   adguardhome glances scrutiny speedtest
+  prometheus grafana node-exporter nvidia-gpu-exporter cadvisor
   cloudflared
   ntfy it-tools drawio
 )
@@ -42,7 +45,7 @@ vpn_status=$(curl -sf --max-time 10 https://am.i.mullvad.net/connected 2>/dev/nu
   ERRORS+=("VPN not connected — torrent traffic may be exposed")
 
 # ── 3. External reachability ──
-for host in homepage npm plex immich adguard ntfy; do
+for host in homepage npm jellyfin immich adguard ntfy; do
   url="https://${host}.${DOMAIN}"
   code=$(curl -sk --max-time 8 -o /dev/null -w '%{http_code}' "$url" || echo 000)
   [[ "$code" =~ ^(200|301|302|401)$ ]] || ERRORS+=("$url returned $code")

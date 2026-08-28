@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # deploy-demo.sh — sanitised demo of scripts/deploy.sh.
-# Used by docs/img/deploy.gif. Echoes a typical idempotent rsync flow
+# Rendered by `vhs deploy.tape`. Echoes a typical idempotent rsync flow
 # without actually syncing anything.
 
 set -euo pipefail
