@@ -18,6 +18,10 @@ LAN_IFACE="${LAN_IFACE:-eth0}"
 # ADMIN_IPS arrives as one space-separated string; split it into an array so
 # each host becomes its own ufw rule.
 read -r -a ADMIN_HOSTS <<< "${ADMIN_IPS:-192.168.1.40 192.168.1.43}"
+if (( ${#ADMIN_HOSTS[@]} == 0 )); then
+  echo "ADMIN_IPS is empty — refusing to apply a policy with no SSH admin rule" >&2
+  exit 1
+fi
 
 ufw --force reset
 
