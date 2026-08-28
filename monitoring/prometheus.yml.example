@@ -18,12 +18,13 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  # Scaphandre exposes Prometheus text format 0.0.4 — needed because
-  # Prometheus 3.x defaults to OpenMetrics and would otherwise reject it.
-  - job_name: 'scaphandre'
-    fallback_scrape_protocol: PrometheusText0.0.4
-    static_configs:
-      - targets: ['scaphandre:8080']
+  # Scaphandre (host power via RAPL) was removed from the stack 2026-07-04.
+  # Kept for reference: it exposes Prometheus text format 0.0.4, so the
+  # fallback line is required with Prometheus 3.x.
+  # - job_name: 'scaphandre'
+  #   fallback_scrape_protocol: PrometheusText0.0.4
+  #   static_configs:
+  #     - targets: ['scaphandre:8080']
 
   - job_name: 'nvidia-gpu'
     static_configs:

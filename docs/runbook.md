@@ -96,7 +96,7 @@ If the tunnel won't come up:
 
 - Check the Mullvad account status (expired?)
 - Check the endpoint in `/etc/wireguard/wg0-mullvad.conf` — rotate to a fresh peer via `scripts/mullvad-rotate.sh`
-- Check if the 5G carrier is blocking UDP 51820 (rare, but happens — fall back to port 443 endpoint)
+- Check if the ISP is blocking UDP 51820 (rare, but happens — fall back to port 443 endpoint)
 
 ### Recover
 
@@ -151,7 +151,7 @@ docker unpause sonarr radarr lidarr prowlarr
 
 ### Postmortem
 
-If this happens more than once a quarter, the real fix is either bigger disks or a retention policy (Sonarr supports "delete after N days watched via Plex"). Runbooks don't replace capacity planning.
+If this happens more than once a quarter, the real fix is either bigger disks or a retention policy (Sonarr supports "delete after N days watched via Jellyfin"). Runbooks don't replace capacity planning.
 
 ---
 

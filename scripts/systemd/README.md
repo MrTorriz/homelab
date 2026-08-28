@@ -11,7 +11,7 @@ paths to your layout if you keep them elsewhere (e.g. `$HOME/scripts/`).
 | `docker-watcher.service` | Streams `docker events`; pushes ntfy on `die`/`oom` | `monitoring/docker-watcher.sh` |
 | `docker-events-ntfy.service` | Broader docker-event monitor (start/stop/health) | `monitoring/docker-events-monitor.py` |
 | `npm-monitor.service` | Tails NPM access logs for path scans, 401/403/404 spam, suspect UAs | `monitoring/npm-monitor.py` |
-| `suricata-ntfy.service` | Reads Suricata `eve.json` and pushes severity-1/2 alerts | `monitoring/suricata-monitor.py` |
+| `suricata-ntfy.service` | Reads Suricata `eve.json` and pushes severity-1/2 alerts — **bare-metal era, not deployed in the current VM** | `monitoring/suricata-monitor.py` |
 
 > Some companion scripts (e.g. `docker-events-monitor.py`, `suricata-monitor.py`)
 > are not yet vendored in this showcase; the units are included as templates.

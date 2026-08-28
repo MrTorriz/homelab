@@ -1,5 +1,7 @@
 # Suricata — passive IDS
 
+> **Reference only.** Suricata ran on the bare-metal host; it is not deployed in the current VM (verified 2026-08-28). Kept as a starting point if it comes back.
+
 Suricata watches the homelab's LAN interface and raises alerts on
 suspicious flows. It does **not** block — this is a deliberate choice
 covered below.

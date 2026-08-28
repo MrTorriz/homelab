@@ -4,7 +4,7 @@ Small bash utilities that keep the homelab honest. All source `lib.sh` for share
 
 | Script | Purpose | Schedule |
 |---|---|---|
-| `deploy.sh` | Idempotent rsync from git → live, with conditional service reloads | On every commit (or `git pull` post-merge hook) |
+| `deploy.sh` | Idempotent rsync from a checkout → live, with conditional service reloads | manual; kept as a rebuild tool — live config is edited in place since 2026-06 |
 | `healthcheck.sh` | Verify containers, VPN, external hostnames, disk usage | every 15 min |
 | `vpn-killswitch-check.sh` | Confirm torrent traffic is confined to the VPN interface | every 30 min |
 | `mullvad-rotate.sh` | Rotate Mullvad exit IP through a country list | every 6 hours |
@@ -12,17 +12,39 @@ Small bash utilities that keep the homelab honest. All source `lib.sh` for share
 
 ## What it looks like
 
+Output below comes from the demo wrappers in `demo/` (no docker, ntfy or DNS
+is touched). Render an animated version with `vhs scripts/demo/<name>.tape`.
+
 `deploy.sh` only touches services whose source files actually changed — and only reloads the ones that need it:
 
-<p align="center">
-  <img src="../docs/img/deploy.gif" alt="deploy.sh idempotent rsync flow with conditional reloads" width="780"/>
-</p>
+```text
+[deploy] git → live (idempotent rsync)
+[1/5] checking diffs ................. 3 files changed
+       ~ docker/compose.yml
+       ~ homepage/services.yaml
+       ~ scripts/healthcheck.sh
+[2/5] rsync → ~/docker/services/ ..... 1 file updated
+[3/5] rsync → ~/docker/appdata/ ...... 1 file updated
+[4/5] rsync → ~/scripts/ ............. 1 file updated
+[5/5] reload affected services ........ docker restart homepage
+
+[ntfy] homelab-alerts: deploy ok — 3 files, 1 service reloaded (4.2s)
+  → no changes for: ufw, fail2ban, sshd, systemd units
+exit 0
+```
 
 `healthcheck.sh` is the periodic safety net — if anything is unhealthy, ntfy fires:
 
-<p align="center">
-  <img src="../docs/img/healthcheck.gif" alt="healthcheck.sh verifying containers, VPN, DNS, disk thresholds" width="780"/>
-</p>
+```text
+[healthcheck] starting periodic check
+[1/4] containers running ............. OK (44/44 expected)
+[2/4] VPN reality-check (Mullvad) ..... OK — connected via se-got-wg-006
+[3/4] external hostnames ............. OK (homepage, npm, jellyfin, immich, adguard, ntfy)
+[4/4] disk usage thresholds ........... OK (/ 29%, /mnt/media 90%, /mnt/storage 73%)
+
+[ntfy] homelab-alerts: all 44 containers healthy — VPN locked, disks nominal
+exit 0 — next run in 15 min
+```
 
 ## Subdirectories
 
@@ -42,6 +64,8 @@ Each subdirectory holds standalone scripts that source `../lib.sh`. Read the hea
 
 <p align="center">
   <img src="../docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); container count and disk figures predate the 2026-08 snapshot.</sub>
 </p>
 
 The full schedule that ties these together lives in [`crontab.example`](crontab.example).
