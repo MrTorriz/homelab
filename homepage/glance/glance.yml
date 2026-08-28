@@ -1,14 +1,11 @@
 # ────────────────────────────────────────────────────────────
 # Glance — base config (default theme)
 #
-# Glance runs as four sibling instances (default + three themes).
-# Each one is iframed into Homepage's FEED tab via custom JS so the
-# active iframe matches the selected Homepage theme.
-#
-# The three themed variants (deepspace / tokyo / amber) only differ
-# in the `theme:` block — they reuse the same `pages:` definition
-# below by inlining it. If you prefer the live setup, split the
-# `pages:` block into a separate `pages.yml` and `$include:` it.
+# Glance runs as two sibling instances: this default one and an
+# amber-themed variant (`glance.amber.yml`). The amber variant only
+# differs in the `theme:` block and reuses the same `pages:` definition
+# below. In the live setup the `pages:` block lives in a separate
+# `pages.yml` pulled in with `$include:`.
 # ────────────────────────────────────────────────────────────
 
 server:
@@ -178,9 +175,9 @@ pages:
             cache: 5m
             title: Services
             sites:
-              - title: Plex
-                url: http://homelab.local:32400/web
-                icon: si:plex
+              - title: Jellyfin
+                url: http://homelab.local:8096
+                icon: si:jellyfin
               - title: Sonarr
                 url: http://homelab.local:8989
                 icon: si:sonarr
@@ -211,11 +208,11 @@ pages:
               - linuxserver/docker-bazarr
               - linuxserver/docker-prowlarr
               - linuxserver/docker-qbittorrent
-              - linuxserver/docker-plex
+              - linuxserver/docker-jellyfin
               - gethomepage/homepage
               - glanceapp/glance
               - nicolargo/glances
-              - containrrr/watchtower
+              - nicholas-fedor/watchtower
 
           - type: releases
             title: Tools & Security

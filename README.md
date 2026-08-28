@@ -2,24 +2,16 @@
 
 # Homelab
 
-**Self-hosted infrastructure as code — ~50 Docker services, Prometheus + Grafana power-monitoring, defense-in-depth security, fully reproducible.**
+**Sanitized reference of a real homelab: 44 Docker containers in one Proxmox VM, defense-in-depth, tunnel ingress.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MrTorriz/homelab/lint.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/MrTorriz/homelab/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/MrTorriz/homelab?style=flat-square&logo=git&logoColor=white)](https://github.com/MrTorriz/homelab/commits/main)
-[![Services](https://img.shields.io/badge/services-~50-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
-[![Open inbound ports](https://img.shields.io/badge/inbound_ports-0-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
-
-<br/>
-
-[![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)](#)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu_24.04-E95420?style=flat-square&logo=ubuntu&logoColor=white)](#)
-[![Proxmox VE](https://img.shields.io/badge/Proxmox_VE-E57000?style=flat-square&logo=proxmox&logoColor=white)](https://github.com/MrTorriz/proxmox-homelab)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)](#)
-[![Nginx](https://img.shields.io/badge/Nginx-009639?style=flat-square&logo=nginx&logoColor=white)](#)
-[![Suricata](https://img.shields.io/badge/Suricata_IDS-DC322F?style=flat-square&logoColor=white)](#)
-[![Cloudflare](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white)](#)
-[![Mullvad](https://img.shields.io/badge/Mullvad_VPN-FFD524?style=flat-square&logoColor=black)](#)
+[![Containers](https://img.shields.io/badge/containers-44-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
+[![Ingress](https://img.shields.io/badge/ingress-cloudflare_tunnel-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
+[![Proxmox VE](https://img.shields.io/badge/Proxmox_VE-8.4-E57000?style=flat-square&logo=proxmox&logoColor=white)](https://github.com/MrTorriz/proxmox-homelab)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=flat-square&logo=ubuntu&logoColor=white)](docs/hardware.md)
+[![Docker](https://img.shields.io/badge/Docker-29.1-2496ED?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
 
 </div>
 
@@ -27,125 +19,84 @@
 
 ## TL;DR
 
-- **Defense-in-depth security** — UFW + Suricata IDS + fail2ban + VPN killswitch + zero open ports.
-- **Power-aware monitoring** — Prometheus + Grafana + Scaphandre measure real wattage and cost.
-- **Event-driven alerting** — ~20 ntfy callers push SSH, sudo, IDS hits to phone in seconds.
+- **Defense in depth** — UFW default-deny, fail2ban, `no-new-privileges` on every service, two-tier Docker socket proxy, Mullvad lockdown for the whole VM with a verified torrent killswitch.
+- **Tunnel ingress** — external access rides an outbound Cloudflare Tunnel behind Google OAuth. Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28.
+- **Three monitoring layers** — Prometheus/Grafana metrics, 18 ntfy callers (six event-driven), cron healthcheck (59 checks every 15 min).
+
+### Verified snapshot — 2026-08-28
+
+| | |
+|---|---|
+| Containers | 44 running / 0 unhealthy — `docker ps` |
+| Guest OS | Ubuntu 24.04.4 · kernel 6.8.0-138 |
+| Docker / Compose | 29.1.3 / 2.40.3 |
+| GPU | RTX 2060 via vfio — NVENC (Jellyfin, Tdarr) + Immich ML |
+| Storage | `/` 29 % · storage 73 % · media 90 % |
+| Egress | Mullvad WireGuard, lockdown mode, verified exit |
+| Hypervisor | Proxmox VE 8.4.21 → [proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab) |
+
+<sub>Read from the live system on the date above; nothing here updates automatically. What was and was not re-measured: <a href="docs/metrics.md">docs/metrics.md</a>.</sub>
+
+---
 
 <p align="center">
-  <img src="docs/img/architecture.svg" alt="Homelab architecture — Internet → edge perimeter → Docker host (detection, applications, observability) → storage, with WireGuard tunnel as parallel sidoline" width="900"/>
+  <img src="docs/img/architecture.svg" alt="Homelab architecture — Internet → edge perimeter → Docker host (detection, applications, observability) → storage, with the WireGuard tunnel as a parallel rail" width="900"/>
 </p>
 
-> **Runs virtualized.** This whole stack is the `docker-host` VM on a Proxmox host — the RTX 2060 and both HDDs are handed to it via passthrough. The hypervisor layer (VM fleet, GPU/disk passthrough, fail-closed VPN gateway) is documented in **[proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)**.
+> **Runs virtualized.** This whole stack is the `docker-host` VM on a Proxmox host — the RTX 2060 and both HDDs are handed to it via passthrough. The hypervisor beneath this VM: **[proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)** (VM fleet, GPU/disk passthrough, fail-closed VPN gateway).
 
----
+## What runs here
 
-## By the numbers
+| Category | Services | Details |
+|---|---|---|
+| Reverse proxy & access | Nginx Proxy Manager, cloudflared | [docker/README.md](docker/README.md#service-catalogue) |
+| Dashboards | Homepage, Glance ×2 | [homepage/](homepage/README.md) |
+| Media | Jellyfin (NVENC), Sonarr, Radarr, Lidarr, Bazarr, Prowlarr, FlareSolverr, qBittorrent (VPN-bound), Tdarr, Seerr, Audiobookshelf | [docker/README.md](docker/README.md#service-catalogue) |
+| Photos & files | Immich (server, ML, Postgres, Redis), Nextcloud (app, Postgres, Redis) | [docker/README.md](docker/README.md#immich-post-install-tuning) |
+| DNS & network | AdGuard Home, Speedtest Tracker | [docs/architecture.md](docs/architecture.md) |
+| Container management | Portainer, Dozzle, Watchtower, diun, docker-socket-proxy ×2 (ro + rw) | [docker/README.md](docker/README.md#conventions) |
+| Observability | Prometheus, Grafana, node-exporter, nvidia-gpu-exporter, cAdvisor, Glances, Scrutiny | [docs/observability.md](docs/observability.md) |
+| Notifications & reading | ntfy, Miniflux (+ Postgres) | [docs/observability.md](docs/observability.md#events-layer--18-ntfy-callers) |
+| Utilities | IT-Tools, draw.io | [docker/README.md](docker/README.md#service-catalogue) |
 
-<table align="center">
-  <tr>
-    <td align="center" width="180"><h2>~50</h2>services</td>
-    <td align="center" width="180"><h2>0</h2>inbound ports</td>
-    <td align="center" width="180"><h2>90 d</h2>metric retention</td>
-    <td align="center" width="180"><h2>22.7k</h2>UFW drops / 7d</td>
-  </tr>
-</table>
-
-Sourced from [`docs/metrics.md`](docs/metrics.md) — every figure links back to the command or dashboard that produced it.
-
----
-
-## Stack
-
-### Reverse proxy & access
-
-[![Nginx Proxy Manager](https://img.shields.io/badge/Nginx_Proxy_Manager-009639?style=flat-square&logo=nginx&logoColor=white)](#)
-[![Cloudflare Tunnel](https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white)](#)
-
-### Media
-
-[![Plex](https://img.shields.io/badge/Plex-E5A00D?style=flat-square&logo=plex&logoColor=white)](#)
-[![Sonarr](https://img.shields.io/badge/Sonarr-2596BE?style=flat-square&logo=sonarr&logoColor=white)](#)
-[![Radarr](https://img.shields.io/badge/Radarr-FFC230?style=flat-square&logo=radarr&logoColor=black)](#)
-[![Lidarr](https://img.shields.io/badge/Lidarr-00CC44?style=flat-square&logo=lidarr&logoColor=white)](#)
-[![Bazarr](https://img.shields.io/badge/Bazarr-6B6F76?style=flat-square&logoColor=white)](#)
-[![Prowlarr](https://img.shields.io/badge/Prowlarr-F08000?style=flat-square&logo=prowlarr&logoColor=white)](#)
-[![qBittorrent](https://img.shields.io/badge/qBittorrent-2F67BA?style=flat-square&logo=qbittorrent&logoColor=white)](#)
-[![Tdarr](https://img.shields.io/badge/Tdarr-1F1F1F?style=flat-square&logoColor=white)](#)
-[![Audiobookshelf](https://img.shields.io/badge/Audiobookshelf-1C2229?style=flat-square&logoColor=white)](#)
-
-### Photos & files
-
-[![Immich](https://img.shields.io/badge/Immich-4250AF?style=flat-square&logo=immich&logoColor=white)](#)
-[![Nextcloud](https://img.shields.io/badge/Nextcloud-0082C9?style=flat-square&logo=nextcloud&logoColor=white)](#)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-336791?style=flat-square&logo=postgresql&logoColor=white)](#)
-[![Redis](https://img.shields.io/badge/Redis_7-DC382D?style=flat-square&logo=redis&logoColor=white)](#)
-
-### Local AI
-
-[![Ollama](https://img.shields.io/badge/Ollama-000000?style=flat-square&logo=ollama&logoColor=white)](#)
-[![Open WebUI](https://img.shields.io/badge/Open_WebUI-3F8CFF?style=flat-square&logoColor=white)](#)
-[![Faster-Whisper](https://img.shields.io/badge/Faster--Whisper-9146FF?style=flat-square&logoColor=white)](#)
-
-### Network & DNS
-
-[![AdGuard Home](https://img.shields.io/badge/AdGuard_Home-68BC71?style=flat-square&logo=adguard&logoColor=white)](#)
-[![UniFi](https://img.shields.io/badge/UniFi-0559C9?style=flat-square&logo=ubiquiti&logoColor=white)](#)
-
-### Security
-
-[![UFW](https://img.shields.io/badge/UFW-DD4814?style=flat-square&logoColor=white)](#)
-[![fail2ban](https://img.shields.io/badge/fail2ban-D70015?style=flat-square&logoColor=white)](#)
-[![Suricata IDS](https://img.shields.io/badge/Suricata_IDS-DC322F?style=flat-square&logoColor=white)](#)
-[![Mullvad WireGuard](https://img.shields.io/badge/Mullvad_WireGuard-FFD524?style=flat-square&logo=wireguard&logoColor=black)](#)
-[![Docker socket proxy](https://img.shields.io/badge/Docker_socket_proxy-2496ED?style=flat-square&logo=docker&logoColor=white)](#)
-
-### Observability
-
-[![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)](#)
-[![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white)](#)
-[![Scaphandre](https://img.shields.io/badge/Scaphandre-1F2A44?style=flat-square&logoColor=white)](#)
-[![node-exporter](https://img.shields.io/badge/node--exporter-E6522C?style=flat-square&logo=prometheus&logoColor=white)](#)
-[![cAdvisor](https://img.shields.io/badge/cAdvisor-2496ED?style=flat-square&logo=docker&logoColor=white)](#)
-[![Glances](https://img.shields.io/badge/Glances-3776AB?style=flat-square&logo=python&logoColor=white)](#)
-[![Scrutiny](https://img.shields.io/badge/Scrutiny_(SMART)-191919?style=flat-square&logoColor=white)](#)
-[![ntfy](https://img.shields.io/badge/ntfy-317F43?style=flat-square&logoColor=white)](#)
-
-### Container management
-
-[![Portainer](https://img.shields.io/badge/Portainer-13BEF9?style=flat-square&logo=portainer&logoColor=white)](#)
-[![Dozzle](https://img.shields.io/badge/Dozzle-1F2937?style=flat-square&logoColor=white)](#)
-[![Watchtower](https://img.shields.io/badge/Watchtower-2496ED?style=flat-square&logo=docker&logoColor=white)](#)
-
-Full per-service catalogue: [`docker/README.md`](docker/README.md)
-
----
+43 services in `docker/compose.yml`; the 44th container on the live host is a personal service with a private image and is not published.
 
 ## Showcase
 
 <p align="center">
-  <img src="docs/img/homepage.gif" alt="Homepage dashboard with themed feeds, live service tiles, and *arr stack" width="900"/><br/>
-  <sub><b>Homepage</b> — themed dashboards · live tiles · *arr stack</sub>
+  <img src="docs/img/homepage.png" alt="Homepage dashboard — header with system gauges, then Network, System, Media and Links groups; *arr stack below" width="900"/><br/>
+  <sub><b>Homepage</b> — sanitized recreation from live-verified output (2026-08-28): hostname, location and ISP labels were replaced in the DOM before capture.</sub>
 </p>
 
 <p align="center">
   <img src="docs/img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard, twelve panels covering power, energy, cost, capacity" width="900"/><br/>
-  <sub><b>Grafana</b> — power, energy, cost, capacity</sub>
+  <sub><b>Grafana</b> — rendered from the demo stack in <code>monitoring/demo/</code> with synthetic values; the host-power panels have been empty on the live system since 2026-07-04.</sub>
 </p>
 
 ### Tooling demos
 
 <table align="center">
   <tr>
-    <td width="50%" align="center">
-      <img src="docs/img/deploy.gif" alt="deploy.sh idempotent rsync flow with conditional service reloads" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>deploy.sh</b> — idempotent rsync with conditional reloads</sub>
+    <td width="33%" align="center">
+      <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature" width="100%" style="width:100%; height:auto"/><br/>
+      <sub><b>ntfy</b> — event-driven push alerts</sub>
     </td>
-    <td width="50%" align="center">
-      <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, Suricata signature" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>ntfy</b> — event-driven push alerts to phone</sub>
+    <td width="33%" align="center">
+      <img src="docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="100%" style="width:100%; height:auto"/><br/>
+      <sub><b>MOTD</b> — SSH login banner</sub>
+    </td>
+    <td width="33%" align="center">
+      <img src="docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh verifying torrent traffic exits via Mullvad" width="100%" style="width:100%; height:auto"/><br/>
+      <sub><b>killswitch check</b> — torrent egress vs host egress</sub>
     </td>
   </tr>
 </table>
+
+<p align="center"><sub>Synthetic demos recorded 2026-04 (<code>scripts/demo/</code>); the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
+
+> **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with hostnames, domains and identifiers replaced. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
+>
+> **Sanitization policy.** RFC1918 addressing (`192.0.2.0/24`, `198.51.100.0/24`) and the network topology are published deliberately — they are unreachable from outside and carry no identity. Hostnames, domains, MAC addresses, disk serials/WWNs, account and device identifiers, e-mail addresses and the ISP's name are replaced or removed.
 
 ---
 
@@ -153,57 +104,56 @@ Full per-service catalogue: [`docker/README.md`](docker/README.md)
 
 ```text
 .
-├── docker/              # Compose stack (~50 services) + .env.example
-├── homepage/            # Dashboard config (services + widgets)
-├── scripts/             # deploy, healthcheck, backup/, security/, monitoring/, maintenance/, motd/, systemd/
-├── security/            # UFW, fail2ban, SSH, hardening checklist
-├── docs/                # Architecture, security model, threat model, runbook, DR, cost, decisions
-└── .github/workflows/   # CI: shellcheck + yamllint + markdownlint + gitleaks + sanitize-check
+├── docker/              # Compose stack (43 services; 44 containers live) + .env.example
+├── homepage/            # Dashboard config (services + widgets) and the two Glance instances
+├── scripts/             # healthcheck, backup/, security/, monitoring/, maintenance/, motd/, systemd/
+├── security/            # UFW baseline, fail2ban, SSH, sysctl, hardening checklist, Suricata reference
+├── monitoring/          # Prometheus scrape config, Grafana provisioning + dashboard, demo stack
+├── docs/                # Architecture, security model, observability, metrics, runbook, DR, cost, decisions
+└── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
 ```
 
----
+The repository's social preview is generated from [`docs/img/social-preview.svg`](docs/img/social-preview.svg) (rendered to [`social-preview.png`](docs/img/social-preview.png) with `rsvg-convert`); `docs/img/architecture.svg` is hand-edited in the same style.
 
-## Setup
+## Reusing pieces
+
+Nothing here is meant to be run as-is, but the parts are separable:
 
 ```bash
 git clone https://github.com/MrTorriz/homelab.git ~/homelab
 cd ~/homelab
 
-# 1. Configure
-cp docker/.env.example docker/.env
-$EDITOR docker/.env
-
-# 2. Bring up the stack
+# Compose stack — needs a filled-in .env and the paths/GPU it assumes
+cp docker/.env.example docker/.env && $EDITOR docker/.env
 docker network create homelab
-cd docker && docker compose up -d
+(cd docker && docker compose config -q)      # validate before you run anything
 
-# 3. Apply security baseline
-sudo bash ../security/ufw-baseline.sh
-sudo bash ../security/install-fail2ban.sh
+# Firewall baseline (idempotent; review LAN_CIDR / ADMIN_IPS first)
+sudo bash security/ufw-baseline.sh
 
-# 4. Deploy via the same flow on every change
-../scripts/deploy.sh
+# fail2ban jail + ntfy action
+sudo cp security/fail2ban/jail.local /etc/fail2ban/jail.local && sudo cp security/fail2ban/action.d/ntfy.conf /etc/fail2ban/action.d/
+
+# Cron + systemd units for the alerters
+cat scripts/crontab.example; ls scripts/systemd/
 ```
 
-> **Note:** set `LAN_IFACE` in `.env` to match your NIC name. `eth0` is a placeholder — modern Ubuntu typically uses `enp*` or `ens*` (check with `ip -br link`).
+> Set `LAN_IFACE` to match your NIC name — `eth0` is a placeholder; modern Ubuntu typically uses `enp*` or `ens*` (`ip -br link`).
 
-External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:443` (no router port-forwarding needed).
-
----
+External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:443`; the tunnel is outbound-only, so it needs no inbound port on the router.
 
 ## Documentation
 
-- [`docs/architecture.md`](docs/architecture.md) — How traffic, storage, and trust flow through the system
+- [`docs/architecture.md`](docs/architecture.md) — How traffic, storage and trust flow through the VM
 - [`docs/security.md`](docs/security.md) — Defense-in-depth model + STRIDE analysis
-- [`docs/observability.md`](docs/observability.md) — Three-layer model: metrics (Prometheus + Grafana + Scaphandre), events (~20 ntfy callers across 7 security + 13 operational sources), health (healthcheck cron) — [dashboard screenshot](docs/img/grafana-overview.png)
-- [`docs/metrics.md`](docs/metrics.md) — What the system actually catches (real numbers)
+- [`docs/observability.md`](docs/observability.md) — Three layers: metrics (Prometheus + Grafana), events (18 ntfy callers), health (healthcheck cron)
+- [`docs/metrics.md`](docs/metrics.md) — Snapshot 2026-08-28: what was re-measured, what was not
 - [`docs/runbook.md`](docs/runbook.md) — Incident playbooks: what to do at 03:00
-- [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + zero-to-running restore
-- [`docs/cost.md`](docs/cost.md) — What it actually costs to run, with receipts
+- [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + restore procedure
+- [`docs/cost.md`](docs/cost.md) — Historical cost breakdown (bare-metal era, April 2026)
 - [`docs/hardware.md`](docs/hardware.md) — Specs, storage layout, GPU role
 - [`docs/decisions.md`](docs/decisions.md) — Why these tools and not the alternatives
-
----
+- [`SECURITY.md`](SECURITY.md) — How to report a sanitization miss
 
 ## License
 

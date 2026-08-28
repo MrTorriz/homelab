@@ -1,7 +1,9 @@
 # Observability stack
 
-Prometheus + Grafana + four exporters (node, scaphandre, nvidia-gpu,
-cadvisor) running as containers in `docker/compose.yml`. This directory
+Prometheus + Grafana + three exporters (node, nvidia-gpu, cadvisor)
+running as containers in `docker/compose.yml`. Scaphandre (host power via
+RAPL) was part of the set until 2026-07-04; its scrape job is left
+commented out in `prometheus.yml.example`. This directory
 holds **example configs and the provisioned dashboard** — at deploy time
 they get rsync'd into the live appdata tree.
 
@@ -50,7 +52,7 @@ cp monitoring/grafana/dashboards/*.json \
 sudo chown -R 472:472   ${APPDATA_DIR}/grafana
 sudo chown -R 65534:65534 ${APPDATA_DIR}/prometheus
 
-docker compose up -d prometheus grafana node-exporter scaphandre nvidia-gpu-exporter cadvisor
+docker compose up -d prometheus grafana node-exporter nvidia-gpu-exporter cadvisor
 ```
 
 Login at `http://${LAN_IP}:3001` with `GRAFANA_ADMIN_USER` /
@@ -63,11 +65,11 @@ dashboard appears under Dashboards → General automatically.
   At ~15s scrape interval expect ~2–3 GB of TSDB on disk for that window.
 - **Scrape interval** is 15 s (global). Bumping below 10 s buys little
   resolution while doubling RAM/CPU on Prometheus.
-- **Scaphandre fallback_scrape_protocol** — Prometheus 3.x speaks
-  OpenMetrics by default, but Scaphandre still emits Prometheus Text
-  Format 0.0.4. The job-level `fallback_scrape_protocol: PrometheusText0.0.4`
-  in `prometheus.yml.example` is required, otherwise the scrape errors out
-  with `text format parse error`.
+- **Scaphandre (removed 2026-07-04)** — if you bring it back, keep the
+  job-level `fallback_scrape_protocol: PrometheusText0.0.4`: Prometheus 3.x
+  speaks OpenMetrics by default and Scaphandre still emits text format
+  0.0.4, otherwise the scrape errors out with `text format parse error`.
+  The host-power panels in the dashboard stay empty without it.
 - **GPU exporter** needs `runtime: nvidia` and the NVIDIA Container
   Toolkit on the host. Without a GPU, drop both the exporter and the
   `nvidia-gpu` scrape job — the dashboard panels degrade gracefully (no
