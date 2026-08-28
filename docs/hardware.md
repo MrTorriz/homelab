@@ -17,7 +17,7 @@ The physical machine below is the Proxmox host. The GPU and both HDDs are passed
 | CPU | Intel i5-9400F (6c/6t @ 4.1 GHz) | Plenty of headroom — most services idle at <5% |
 | RAM | 16 GB DDR4 | 10 GB of it goes to the `docker-host` VM; Immich, Jellyfin and the Postgres instances are the heavy hitters |
 | GPU | NVIDIA RTX 2060 | Jellyfin hardware transcode, Immich ML inference, Tdarr NVENC pipeline |
-| Boot | 500 GB NVMe | OS + container runtime + `${APPDATA_DIR}` |
+| Boot | 250 GB virtual disk (thin-provisioned on the host NVMe) | OS + container runtime + `${APPDATA_DIR}` |
 | Bulk 1 | 4 TB HDD | `${MEDIA_DIR}` — movies, series, music, books |
 | Bulk 2 | 4 TB HDD | `${STORAGE_DIR}` — photos, downloads, transcoder cache |
 

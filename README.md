@@ -20,7 +20,7 @@
 ## TL;DR
 
 - **Defense in depth** — UFW default-deny, fail2ban, `no-new-privileges` on every service, two-tier Docker socket proxy, Mullvad lockdown for the whole VM with a verified torrent killswitch.
-- **Tunnel-only ingress** — external access rides an outbound Cloudflare Tunnel behind Google OAuth; no inbound WAN ports are configured on purpose.
+- **Tunnel-only ingress** — external access rides an outbound Cloudflare Tunnel behind Google OAuth; no inbound WAN ports are configured on purpose (router state not re-verified during the 2026-08-28 audit).
 - **Three monitoring layers** — Prometheus/Grafana metrics, 19 event-driven ntfy callers, cron healthcheck (59 checks every 15 min).
 
 ### Verified snapshot — 2026-08-28
