@@ -39,7 +39,7 @@
 
     <g transform="translate(495, 360)">
       <text font-size="56" font-weight="700" fill="#2f81f7">tunnel</text>
-      <text y="36" font-size="18" fill="#8b949e">only</text>
+      <text y="36" font-size="18" fill="#8b949e">outbound</text>
       <text y="58" font-size="18" fill="#8b949e">ingress</text>
     </g>
 
