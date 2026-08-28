@@ -103,7 +103,7 @@
     <text x="290" y="261" fill="#f5a623" font-weight="600" letter-spacing="2">CLOUDFLARE TUNNEL</text>
     <text x="290" y="287">cloudflared</text>
     <text x="290" y="305" font-size="10" fill="#aaa">outbound only · OAuth gate</text>
-    <text x="290" y="324" font-size="9" fill="#5a8fb8">no inbound WAN ports configured</text>
+    <text x="290" y="324" font-size="8" fill="#5a8fb8">router not re-verified 2026-08-28</text>
 
     <text x="540" y="261" fill="#f5a623" font-weight="600" letter-spacing="2">NGINX PROXY MGR</text>
     <text x="540" y="287">npm</text>

@@ -38,7 +38,7 @@ kept as history, not as current state.
 
 | Metric | Last value | Last measured | Status |
 |---|---|---|---|
-| Inbound WAN ports at the router | none configured | April 2026 | No inbound WAN ports are configured on purpose (external access rides an outbound Cloudflare Tunnel); the router's port-forward table was **not re-verified** during the 2026-08-28 audit |
+| Inbound WAN ports at the router | **not re-verified** | — | Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28. |
 | UFW drops, rolling 7 days | 22 701 packets | April 2026 | not re-measured |
 | Suricata IDS signature hits | see `fast.log` | April 2026 (bare-metal era) | **not deployed** in the current VM; config kept in `security/suricata/` as reference |
 | Host uptime / container uptime | 5 d+ | April 2026 | not re-measured |

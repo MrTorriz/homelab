@@ -4,6 +4,8 @@
 for a personal homelab. There are no releases, no packages and nothing here is
 deployed from this repo — the live system runs from a private counterpart.
 
+**Sanitization policy.** RFC1918 addressing (`192.168.1.0/24`, `10.10.10.0/24`) and the network topology are published deliberately — they are unreachable from outside and carry no identity. Hostnames, domains, MAC addresses, disk serials/WWNs, account and device identifiers, e-mail addresses and the ISP's name are replaced or removed.
+
 **What to report.** Two things are worth a report:
 
 - a sanitization miss — a real hostname, identifier, address, token or other

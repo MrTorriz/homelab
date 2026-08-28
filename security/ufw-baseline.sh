@@ -15,7 +15,9 @@ set -euo pipefail
 
 LAN_CIDR="${LAN_CIDR:-192.168.1.0/24}"
 LAN_IFACE="${LAN_IFACE:-eth0}"
-ADMIN_IPS=("${ADMIN_IPS[@]:-192.168.1.40 192.168.1.43}")
+# ADMIN_IPS arrives as one space-separated string; split it into an array so
+# each host becomes its own ufw rule.
+read -r -a ADMIN_HOSTS <<< "${ADMIN_IPS:-192.168.1.40 192.168.1.43}"
 
 ufw --force reset
 
@@ -36,7 +38,7 @@ ufw deny in from ::1
 # ─── SSH from admin hosts only ───────────────────────────────
 # SSH is on a non-default port (see ssh/sshd_config). Restrict
 # even that to known admin source IPs.
-for ip in "${ADMIN_IPS[@]}"; do
+for ip in "${ADMIN_HOSTS[@]}"; do
   ufw allow from "$ip" to any port 2222 proto tcp comment "ssh from admin"
 done
 

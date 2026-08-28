@@ -2,13 +2,13 @@
 
 # Homelab
 
-**Sanitized reference of a real homelab: 44 Docker containers in one Proxmox VM, defense-in-depth, tunnel-only ingress.**
+**Sanitized reference of a real homelab: 44 Docker containers in one Proxmox VM, defense-in-depth, tunnel ingress.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MrTorriz/homelab/lint.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/MrTorriz/homelab/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/MrTorriz/homelab?style=flat-square&logo=git&logoColor=white)](https://github.com/MrTorriz/homelab/commits/main)
 [![Containers](https://img.shields.io/badge/containers-44-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
-[![Ingress](https://img.shields.io/badge/ingress-tunnel--only-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
+[![Ingress](https://img.shields.io/badge/ingress-cloudflare_tunnel-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
 [![Proxmox VE](https://img.shields.io/badge/Proxmox_VE-8.4-E57000?style=flat-square&logo=proxmox&logoColor=white)](https://github.com/MrTorriz/proxmox-homelab)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=flat-square&logo=ubuntu&logoColor=white)](docs/hardware.md)
 [![Docker](https://img.shields.io/badge/Docker-29.1-2496ED?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
@@ -20,7 +20,7 @@
 ## TL;DR
 
 - **Defense in depth** — UFW default-deny, fail2ban, `no-new-privileges` on every service, two-tier Docker socket proxy, Mullvad lockdown for the whole VM with a verified torrent killswitch.
-- **Tunnel-only ingress** — external access rides an outbound Cloudflare Tunnel behind Google OAuth; no inbound WAN ports are configured on purpose (router state not re-verified during the 2026-08-28 audit).
+- **Tunnel ingress** — external access rides an outbound Cloudflare Tunnel behind Google OAuth. Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28.
 - **Three monitoring layers** — Prometheus/Grafana metrics, 18 ntfy callers (six event-driven), cron healthcheck (59 checks every 15 min).
 
 ### Verified snapshot — 2026-08-28
@@ -95,6 +95,8 @@
 <p align="center"><sub>Synthetic demos recorded 2026-04 (<code>scripts/demo/</code>); the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
 
 > **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with hostnames, domains and identifiers replaced. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
+>
+> **Sanitization policy.** RFC1918 addressing (`192.168.1.0/24`, `10.10.10.0/24`) and the network topology are published deliberately — they are unreachable from outside and carry no identity. Hostnames, domains, MAC addresses, disk serials/WWNs, account and device identifiers, e-mail addresses and the ISP's name are replaced or removed.
 
 ---
 
@@ -138,7 +140,7 @@ cat scripts/crontab.example; ls scripts/systemd/
 
 > Set `LAN_IFACE` to match your NIC name — `eth0` is a placeholder; modern Ubuntu typically uses `enp*` or `ens*` (`ip -br link`).
 
-External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:443`; no router port-forwarding is needed.
+External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:443`; the tunnel is outbound-only, so it needs no inbound port on the router.
 
 ## Documentation
 

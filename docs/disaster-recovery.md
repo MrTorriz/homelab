@@ -109,7 +109,7 @@ Media is a separate question — `${MEDIA_DIR}` content (media library) would ha
 
 ### Scenario D — Ransomware on the host
 
-**Likelihood:** Rare given UFW + fail2ban + tunnel-only ingress, but worth planning for.
+**Likelihood:** Rare given UFW + fail2ban + tunnel ingress, but worth planning for.
 
 1. Power off immediately. Do not reboot.
 2. Boot rescue media. Confirm extent of encryption.

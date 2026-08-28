@@ -27,7 +27,7 @@ The HDDs are monitored by Scrutiny via SMART. NVMe wear is tracked separately.
 
 | Component | Role |
 |---|---|
-| Gateway | ISP router (NAT; no inbound WAN ports configured — port-forward table not re-verified 2026-08-28) |
+| Gateway | ISP router (NAT). Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28. |
 | Switch | L2 unmanaged Gigabit |
 | Host NIC | 1 GbE |
 

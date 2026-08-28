@@ -21,7 +21,7 @@ grep -q "$snapshot" README.md                      || { echo "README lacks snaps
 grep -q "${containers} containers" docker/README.md || { echo "docker/README.md lacks '${containers} containers'"; fail=1; }
 
 # strings from earlier snapshots that must not come back
-stale=('~50' '41/41' '~40 services' '8 GB cap' 'Scaphandre measure' 'zero open inbound' 'Zero open inbound' '~20 ntfy' 'about 20 ntfy' '19 ntfy' '19 callers' '19 scripts')
+stale=('~50' '41/41' '~40 services' '8 GB cap' 'Scaphandre measure' 'zero open inbound' 'Zero open inbound' '~20 ntfy' 'about 20 ntfy' '19 ntfy' '19 callers' '19 scripts' 'inbound WAN ports are configured' 'No port forwarding is configured' 'tunnel-only')
 for s in "${stale[@]}"; do
   if hits=$(git grep -n -F -- "$s" -- '*.md' '*.yml' '*.yaml' '*.svg' ':!scripts/check-facts.sh'); then
     echo "STALE   '$s':"; echo "$hits" | sed 's/^/        /'

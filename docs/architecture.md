@@ -28,7 +28,7 @@ flowchart TB
 ```
 
 **Key properties:**
-- **No inbound WAN ports are configured on purpose** — external access rides an outbound Cloudflare Tunnel + Google OAuth. The router's port-forward table was not re-verified during the 2026-08-28 audit.
+- **Ingress is an outbound tunnel** — external access rides a Cloudflare Tunnel + Google OAuth. Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28.
 - **The whole VM egresses through Mullvad** (lockdown mode) and resolves DNS through the tunnel's resolver; AdGuard Home on the LAN address serves the other LAN clients.
 - **All LAN DNS** is intercepted by AdGuard Home (running in the `docker-host` VM). The ISP-issued resolver is never used.
 - **Risky egress** (torrent traffic) is locked to the WireGuard interface — if VPN drops, traffic stops (see `../security/vpn-killswitch.md`).
@@ -100,7 +100,7 @@ sequenceDiagram
     App-->>U: Response
 ```
 
-No port forwarding is configured. The home IP is never resolvable from public DNS.
+Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28. The tunnel's public hostnames resolve to Cloudflare, not to the home IP.
 
 ## Why a single host
 

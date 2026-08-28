@@ -6,7 +6,7 @@ Defense in depth: every layer assumes the layer above it has been bypassed.
 
 What this setup defends against:
 
-- **Internet-facing scanning and exploitation** — no inbound WAN ports are configured on purpose; ingress is an outbound Cloudflare Tunnel
+- **Internet-facing scanning and exploitation** — outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28.
 - **Compromise of a single container** — `no-new-privileges` blocks privilege escalation; the Docker socket is reached only through two proxies (read-only for dashboards, write-capable on an internal network for Watchtower and Portainer)
 - **Credential leaks via DNS** — ISP never sees DNS queries
 - **VPN drops while seeding** — torrent traffic is killswitch-bound to the VPN interface
@@ -44,7 +44,7 @@ The attack surface mapped against [Microsoft's STRIDE model](https://learn.micro
 | Control | Implementation |
 |---|---|
 | Inbound firewall | UFW default-deny; only LAN admin IPs whitelisted |
-| External access | Cloudflare Tunnel + Google OAuth (no port forwarding) |
+| External access | Cloudflare Tunnel + Google OAuth. Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28. |
 | DNS | AdGuard Home on the host — ISP DNS bypassed entirely |
 | VPN egress (selective) | Mullvad WireGuard with lockdown mode for torrent client |
 
