@@ -1,32 +1,49 @@
-# Top-bar widgets for Homepage
+# Top-bar widgets for Homepage — mirrors the live header (2026-08-28)
 # https://gethomepage.dev/widgets/
+
+- greeting:
+    text_size: 4xl
+    text: docker-host
+
+- datetime:
+    text_size: lg
+    format:
+      weekday: short
+      hour: 2-digit
+      minute: 2-digit
+      hour12: false
+
+- openmeteo:
+    # No label on purpose — the live config carries the town name.
+    # Coordinates below are central Stockholm; replace with your own.
+    latitude: 59.33
+    longitude: 18.07
+    timezone: Europe/Stockholm
+    units: metric
 
 - resources:
     cpu: true
     memory: true
+    uptime: true
+    refresh: 1500
+
+- resources:
+    label: SSD
+    expanded: true
     disk: /
 
 - resources:
-    label: Media
-    disk:
-      - /mnt/media
-      - /mnt/storage
+    label: HDD1
+    expanded: true
+    disk: /mnt/storage
+
+- resources:
+    label: HDD2
+    expanded: true
+    disk: /mnt/media
 
 - search:
-    provider: duckduckgo
+    provider: google
+    focus: true
+    showSearchSuggestions: true
     target: _blank
-
-- datetime:
-    text_size: xl
-    locale: sv-SE
-    format:
-      timeStyle: short
-      dateStyle: short
-
-- glances:
-    url: http://glances:61208
-    cpu: true
-    mem: true
-    cputemp: true
-    uptime: true
-    expanded: true
