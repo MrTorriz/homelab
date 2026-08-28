@@ -15,7 +15,7 @@ All figures are annualised. Currency is **SEK** (swap to your local equivalent �
 | Category | SEK / year | Notes |
 |---|---:|---|
 | Electricity | ~2 000 | 24/7 idle ~85 W, with bursts to 200 W during transcoding/ML |
-| Internet | ~3 000 | 5G fixed wireless at ~250 SEK/mo, shared with household |
+| Internet | ~3 000 | ISP connection at ~250 SEK/mo, shared with household |
 | VPN (Mullvad) | ~720 | €5/mo flat, no logs, multi-hop |
 | Domain (.com) | ~140 | One domain, registrar pricing |
 | Cloudflare Tunnel | 0 | Free tier covers personal use |
@@ -53,7 +53,7 @@ Real cost moves with spot prices. During cold winter spikes this doubles; in sum
 
 ## Internet
 
-5G fixed wireless via the gateway in [`docs/architecture.md`](architecture.md). The line carries the entire household — Jellyfin remote streaming, all WAN traffic, family devices.
+The ISP connection via the gateway in [`docs/architecture.md`](architecture.md). The line carries the entire household — Jellyfin remote streaming, all WAN traffic, family devices.
 
 - Subscription: **~250 SEK/month** (~3 000 SEK/year)
 - Marginal cost attributed to homelab: hard to isolate, but Jellyfin remote streaming + offsite backup pushes ≥ 100 GB/month

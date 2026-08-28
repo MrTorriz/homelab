@@ -65,7 +65,7 @@
         icon: nextcloud.png
         href: https://cloud.example.com
         container: nextcloud
-        description: Laptop, phone & server sync
+        description: Laptop, iPhone & server sync
         widget:
           # Used/free on the storage volume, read from Prometheus (node-exporter)
           # rather than the Glances API: Glances 4.5.x dropped the v3 API and its
@@ -236,7 +236,7 @@
         icon: draw-io.png
         href: https://drawio.example.com
         container: drawio
-        description: Hypervisor topology diagram
+        description: Proxmox topology
     - Proxmox VE:
         icon: proxmox.png
         href: https://proxmox.example.com
@@ -245,12 +245,12 @@
     - GitHub:
         icon: github.png
         href: https://github.com
-        description: Repositories
+        description: Public repos
         siteMonitor: https://github.com
     - Router:
         icon: mdi-router-wireless
         href: http://192.168.1.1
-        description: ISP router
+        description: ISP gateway
         siteMonitor: https://192.168.1.1
     - Glance:
         icon: mdi-newspaper-variant-multiple

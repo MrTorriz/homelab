@@ -153,7 +153,7 @@
     <text x="257" y="630">socket-proxy</text>
     <text x="257" y="642" font-size="8" fill="#5a8fb8">read-only docker API</text>
     <text x="257" y="670">ntfy shim</text>
-    <text x="257" y="682" font-size="8" fill="#5a8fb8">19 callers · bearer</text>
+    <text x="257" y="682" font-size="8" fill="#5a8fb8">18 callers · bearer</text>
   </g>
 
   <!-- Apps sub-column header -->
@@ -197,10 +197,10 @@
     <rect x="370" y="655" width="95" height="32" rx="2"/>
     <rect x="475" y="655" width="95" height="32" rx="2"/>
     <rect x="580" y="655" width="95" height="32" rx="2"/>
-    <rect x="685" y="655" width="95" height="32" rx="2"/>
+    <rect x="685" y="615" width="95" height="32" rx="2"/>
   </g>
-  <!-- qBittorrent special -->
-  <rect x="685" y="615" width="95" height="32" rx="2" fill="none" stroke="#f5a623" stroke-width="1.4" stroke-dasharray="4,2"/>
+  <!-- qBittorrent special (row 7, bottom-right so the VPN arrow enters from below) -->
+  <rect x="685" y="655" width="95" height="32" rx="2" fill="none" stroke="#f5a623" stroke-width="1.4" stroke-dasharray="4,2"/>
 
   <g font-size="10" fill="#e8e8e8" text-anchor="middle">
     <text x="417" y="435">Jellyfin</text>
@@ -231,12 +231,12 @@
     <text x="417" y="635">IT-Tools</text>
     <text x="522" y="635">draw.io</text>
     <text x="627" y="635">Miniflux DB</text>
-    <text x="732" y="635" fill="#f5a623" font-weight="600">qBittorrent</text>
+    <text x="732" y="635">Glance ×2</text>
 
     <text x="417" y="675">Portainer</text>
     <text x="522" y="675">Dozzle</text>
     <text x="627" y="675">Watchtower</text>
-    <text x="732" y="675">Glance ×2</text>
+    <text x="732" y="675" fill="#f5a623" font-weight="600">qBittorrent</text>
   </g>
 
   <!-- Observability sub-column header -->
@@ -355,11 +355,11 @@
   <g stroke="#f5a623" stroke-width="1.5" stroke-dasharray="5,2" fill="none">
     <!-- mullvad endpoint (internet band) → tunnel rail top -->
     <path d="M 980 138 L 1108 138" marker-end="url(#arrowAmber)" stroke-opacity="0.8"/>
-    <!-- tunnel → qBittorrent — orthogonal route around Observability column
-         (down through gap x=1010-1108, left under row 7, up through gap x=780-810) -->
-    <path d="M 1108 631 L 1080 631 L 1080 700 L 795 700 L 795 631 L 780 631" marker-end="url(#arrowAmber)"/>
+    <!-- tunnel → qBittorrent — down through gap x=1010-1108, left below row 7,
+         then up into the bottom edge of the qBittorrent box (no bracket around Observability) -->
+    <path d="M 1108 671 L 1080 671 L 1080 706 L 732 706 L 732 689" marker-end="url(#arrowAmber)"/>
   </g>
-  <text x="937" y="694" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">torrent traffic only · :6881</text>
+  <text x="906" y="700" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">torrent traffic only · :6881</text>
   <text x="1042" y="132" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">handshake</text>
 
   <!-- ================================================================

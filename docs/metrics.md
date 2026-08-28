@@ -27,11 +27,11 @@ kept as history, not as current state.
 | UFW | active · default deny incoming / allow outgoing / deny routed · 15 rules · no `ALLOW IN` from Anywhere | `ufw status verbose` | yes |
 | fail2ban | active · jail `sshd` · 0 banned / 0 failed | `fail2ban-client status sshd` | yes |
 | Backup (appdata) | 2026-08-28 04:00 UTC, OK, 21 GB | `~/logs/backup.log` | yes |
-| Backup (off-site, rclone crypt) | finished 06:40 UTC, 0 errors; last verify run 2026-08-24 | `~/logs/rclone/`, `backup-verify` log | yes |
+| Backup (off-site, rclone crypt) | finished 06:40 UTC, 0 errors; last verify run 2026-08-24 ended with 1 rclone error (see log) | `~/logs/rclone/`, `backup-verify` log | yes |
 | Event watchers (systemd) | `docker-watcher`, `file-watcher`, `npm-monitor`, `docker-events-ntfy` — all enabled + active | `systemctl is-active …` | yes |
 | Cron | 20 user lines + 4 root lines | `crontab -l; sudo crontab -l` | yes |
 | Healthcheck | 59 checks every 15 min with notification de-duplication and a two-stage tunnel check (the public `scripts/healthcheck.sh` is a trimmed version) | live `healthcheck.sh` | yes |
-| ntfy callers in this repo | **19** scripts call `ntfy_send` (backup 3, maintenance 3, monitoring 4, security 7, `healthcheck.sh`, `mullvad-rotate.sh`) | `grep -l ntfy_send $(git ls-files 'scripts/*.sh' 'scripts/*.py')` | yes (counted in the repo) |
+| ntfy callers in this repo | **18** scripts call `ntfy_send` (backup 3, maintenance 3, monitoring 3, security 7, `healthcheck.sh`, `mullvad-rotate.sh`) | `grep -l ntfy_send $(git ls-files 'scripts/*.sh' 'scripts/*.py') \| grep -v lib.sh` — `lib.sh` defines the shim | yes (counted in the repo) |
 | Hypervisor | Proxmox VE 8.4.21 · kernel 6.8.12-42-pve | `pveversion` — see [proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab) | yes |
 
 ## Not re-measured

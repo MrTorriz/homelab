@@ -21,7 +21,7 @@
 
 - **Defense in depth** — UFW default-deny, fail2ban, `no-new-privileges` on every service, two-tier Docker socket proxy, Mullvad lockdown for the whole VM with a verified torrent killswitch.
 - **Tunnel-only ingress** — external access rides an outbound Cloudflare Tunnel behind Google OAuth; no inbound WAN ports are configured on purpose (router state not re-verified during the 2026-08-28 audit).
-- **Three monitoring layers** — Prometheus/Grafana metrics, 19 event-driven ntfy callers, cron healthcheck (59 checks every 15 min).
+- **Three monitoring layers** — Prometheus/Grafana metrics, 18 ntfy callers (six event-driven), cron healthcheck (59 checks every 15 min).
 
 ### Verified snapshot — 2026-08-28
 
@@ -56,7 +56,7 @@
 | DNS & network | AdGuard Home, Speedtest Tracker | [docs/architecture.md](docs/architecture.md) |
 | Container management | Portainer, Dozzle, Watchtower, diun, docker-socket-proxy ×2 (ro + rw) | [docker/README.md](docker/README.md#conventions) |
 | Observability | Prometheus, Grafana, node-exporter, nvidia-gpu-exporter, cAdvisor, Glances, Scrutiny | [docs/observability.md](docs/observability.md) |
-| Notifications & reading | ntfy, Miniflux (+ Postgres) | [docs/observability.md](docs/observability.md#events-layer--19-ntfy-callers) |
+| Notifications & reading | ntfy, Miniflux (+ Postgres) | [docs/observability.md](docs/observability.md#events-layer--18-ntfy-callers) |
 | Utilities | IT-Tools, draw.io | [docker/README.md](docker/README.md#service-catalogue) |
 
 43 services in `docker/compose.yml`; the 44th container on the live host is a personal service with a private image and is not published.
@@ -144,7 +144,7 @@ External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:44
 
 - [`docs/architecture.md`](docs/architecture.md) — How traffic, storage and trust flow through the VM
 - [`docs/security.md`](docs/security.md) — Defense-in-depth model + STRIDE analysis
-- [`docs/observability.md`](docs/observability.md) — Three layers: metrics (Prometheus + Grafana), events (19 ntfy callers), health (healthcheck cron)
+- [`docs/observability.md`](docs/observability.md) — Three layers: metrics (Prometheus + Grafana), events (18 ntfy callers), health (healthcheck cron)
 - [`docs/metrics.md`](docs/metrics.md) — Snapshot 2026-08-28: what was re-measured, what was not
 - [`docs/runbook.md`](docs/runbook.md) — Incident playbooks: what to do at 03:00
 - [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets + restore procedure

@@ -53,7 +53,7 @@ The original setup was deliberately minimal — Glances + Scrutiny + a bash heal
 So the stack now runs **three independent monitoring layers**:
 
 1. **Metrics** — Prometheus (90 d retention, 15 s scrape) + Grafana, fed by node-exporter, cAdvisor and nvidia-gpu-exporter (Scaphandre supplied CPU+RAM watts until 2026-07-04). The dashboard answers "what's the host doing over time?" and includes a power-cost panel parameterised by electricity price (GPU-only since Scaphandre left).
-2. **Events** — 19 ntfy callers in `scripts/` (cron jobs + systemd daemons + PAM hooks). Answers "what just happened that I need to know about?" — every SSH login, sudo, fail2ban ban, Docker event, NPM scan, file-watch trigger pushes to the phone in seconds.
+2. **Events** — 18 ntfy callers in `scripts/` (cron jobs + systemd daemons + PAM hooks). Answers "what just happened that I need to know about?" — every SSH login, sudo, fail2ban ban, Docker event, NPM scan, file-watch trigger pushes to the phone in seconds.
 3. **Health** — bash `healthcheck.sh` cron every 15 minutes. Answers "is anything broken?" — the safety net for things metrics + events miss (e.g. a container that lies about being healthy).
 
 The three layers are mutually independent. If Prometheus goes down, ntfy alerters still fire and the bash healthcheck still runs. That's the point — no single monitoring tool can fail and silence the whole stack.

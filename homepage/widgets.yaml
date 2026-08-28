@@ -3,7 +3,7 @@
 
 - greeting:
     text_size: 4xl
-    text: docker-host
+    text: HOMELAB
 
 - datetime:
     text_size: lg
