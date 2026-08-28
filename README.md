@@ -111,6 +111,8 @@
 └── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
 ```
 
+The repository's social preview is generated from [`docs/img/social-preview.svg`](docs/img/social-preview.svg) (rendered to [`social-preview.png`](docs/img/social-preview.png) with `rsvg-convert`); `docs/img/architecture.svg` is hand-edited in the same style.
+
 ## Reusing pieces
 
 Nothing here is meant to be run as-is, but the parts are separable:
