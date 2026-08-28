@@ -8,7 +8,7 @@ A single-host homelab with a strong perimeter, isolated egress for risky workloa
 flowchart TB
     Internet([Internet])
     subgraph WAN
-        ISP[ISP / 5G modem]
+        ISP[ISP router]
     end
     subgraph LAN[LAN 192.168.x.0/24]
         SW[L2 switch]
@@ -28,7 +28,8 @@ flowchart TB
 ```
 
 **Key properties:**
-- **Zero open inbound ports** at the router. External access goes through Cloudflare Tunnel + Google OAuth.
+- **No inbound WAN ports are configured on purpose** — external access rides an outbound Cloudflare Tunnel + Google OAuth. The router's port-forward table was not re-verified during the 2026-08-28 audit.
+- **The whole VM egresses through Mullvad** (lockdown mode) and resolves DNS through the tunnel's resolver; AdGuard Home on the LAN address serves the other LAN clients.
 - **All LAN DNS** is intercepted by AdGuard Home (running in the `docker-host` VM). The ISP-issued resolver is never used.
 - **Risky egress** (torrent traffic) is locked to the WireGuard interface — if VPN drops, traffic stops (see `../security/vpn-killswitch.md`).
 
@@ -51,7 +52,7 @@ Backups: nightly rsync of `${APPDATA_DIR}` → off-host destination, weekly veri
 flowchart LR
     User[LAN client] --> AdGuard
     AdGuard -->|*.example.com| NPM
-    NPM --> Plex
+    NPM --> Jellyfin
     NPM --> Sonarr & Radarr & Bazarr & Prowlarr
     NPM --> Immich
     NPM --> Homepage
@@ -60,25 +61,22 @@ flowchart LR
     qBittorrent -->|completed| Sonarr
     qBittorrent -.->|VPN only| Internet
 
-    Plex --> NVENC{NVIDIA GPU}
+    Jellyfin --> NVENC{NVIDIA GPU}
     Immich-ML --> NVENC
     Tdarr --> NVENC
-    FasterWhisper --> NVENC
-    Ollama --> NVENC
 
     NPM --> Nextcloud
-    NPM --> OpenWebUI
-    OpenWebUI --> Ollama
     Nextcloud --> Postgres[(Postgres 16)]
     Nextcloud --> Redis[(Redis 7)]
 
-    Suri[Suricata IDS<br/>passive monitoring] -.->|af-packet| LANIface{{LAN interface}}
-    Suri -->|fast.log severity 1-2| ntfy[(ntfy push)]
+    ProxyRO[docker-proxy<br/>read-only · socket-ro] --> Homepage & Dozzle & diun
+    ProxyRW[docker-proxy-rw<br/>write · socket-rw internal] --> Watchtower & Portainer
+    diun -->|weekly image radar| ntfy[(ntfy push)]
     fail2ban -->|reads logs| NPM
     fail2ban -->|bans at firewall| UFW[(UFW / iptables)]
 ```
 
-**Detection vs response, split:** `fail2ban` handles brute-force responses against SSH and NPM logs (it bans IPs). Suricata observes traffic on the LAN-facing interface in passive mode, raising alerts on exploit patterns, malware C2, scans, and policy violations — those go straight to push notification rather than auto-blocking. Inference and transcription workloads (Ollama, Open WebUI, Faster-Whisper) share the GPU with Plex transcoding and Immich ML; Nextcloud sits behind NPM with its own isolated Postgres and Redis.
+**Detection vs response, split:** `fail2ban` handles brute-force responses against SSH and NPM logs (it bans IPs); the event-driven scripts push what it and the host are doing to ntfy. Network IDS (Suricata) ran on the bare-metal host and is not deployed in the current VM. The GPU is shared three ways: Jellyfin NVENC, Tdarr NVENC and Immich ML (CUDA) — all through the NVIDIA container runtime against the single card the hypervisor passes into this VM. Two Docker socket proxies split the blast radius: the read-only one on `socket-ro` for dashboards and diun, the write-capable one on an `internal` network reachable only by Watchtower and Portainer. Nextcloud sits behind NPM with its own Postgres and Redis.
 
 ## External access
 
@@ -102,7 +100,7 @@ sequenceDiagram
     App-->>U: Response
 ```
 
-No port forwarding. The home IP is never resolvable from public DNS.
+No port forwarding is configured. The home IP is never resolvable from public DNS.
 
 ## Why a single host
 

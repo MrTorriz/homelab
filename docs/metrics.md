@@ -1,78 +1,67 @@
-# Impact & metrics
+<!-- facts: containers=44 snapshot=2026-08-28 vm100_ram_gb=10 -->
+# Metrics — snapshot 2026-08-28
 
-Numbers, not adjectives. Pulled from the live system — every figure links to the control or dashboard that produced it.
+Numbers, not adjectives. Everything in the first table was read from the live
+VM on 2026-08-28 with the command in the *Source* column. The second table
+lists figures this repo used to quote that were **not** re-measured; they are
+kept as history, not as current state.
 
-*Snapshot: April 2026.*
+## Re-measured 2026-08-28
 
-## Attack surface
+| Metric | Value | Source (command) | Re-measured 2026-08-28? |
+|---|---|---|---|
+| Containers | **44 running / 0 unhealthy** | `docker ps --format '{{.Names}}\t{{.Status}}'` | yes |
+| Services defined in this repo | 43 (+1 personal service with a private image, not published) | `docker/compose.yml` | yes |
+| `privileged: true` | **0 / 44** | `docker inspect --format '{{.HostConfig.Privileged}}' $(docker ps -q)` | yes |
+| `no-new-privileges` | **44 / 44** | `docker inspect --format '{{.HostConfig.SecurityOpt}}' $(docker ps -q)` | yes |
+| Published ports bound to `0.0.0.0` | 0 — every port binds the LAN IP or `127.0.0.1` | `docker ps --format '{{.Ports}}'` | yes |
+| Guest OS | Ubuntu 24.04.4 · kernel 6.8.0-138-generic | `lsb_release -d; uname -r` | yes |
+| Docker / Compose | 29.1.3 / 2.40.3 | `docker version; docker compose version` | yes |
+| VM resources | 6 vCPU · **10 GB RAM cap** (raised from 8 GB on 2026-07-04) · 2 GB swap file | `nproc; free -g; swapon --show` | yes |
+| GPU | RTX 2060 via vfio passthrough, driver 580.173.02 | `nvidia-smi` | yes |
+| Disk `/` | 29 % | `df -h /` | yes |
+| Disk `${STORAGE_DIR}` | 73 % | `df -h` | yes |
+| Disk `${MEDIA_DIR}` | **90 %** | `df -h` | yes |
+| VPN | Mullvad connected, lockdown mode on, relay `se-got-wg-006`; host exit and qBittorrent exit both verified as Mullvad | `mullvad status; curl https://am.i.mullvad.net/json` | yes |
+| IPv6 | 0 addresses on `eth0`, 0 IPv6 routes | `ip -6 addr; ip -6 route` | yes |
+| UFW | active · default deny incoming / allow outgoing / deny routed · 15 rules · no `ALLOW IN` from Anywhere | `ufw status verbose` | yes |
+| fail2ban | active · jail `sshd` · 0 banned / 0 failed | `fail2ban-client status sshd` | yes |
+| Backup (appdata) | 2026-08-28 04:00 UTC, OK, 21 GB | `~/logs/backup.log` | yes |
+| Backup (off-site, rclone crypt) | finished 06:40 UTC, 0 errors; last verify run 2026-08-24 | `~/logs/rclone/`, `backup-verify` log | yes |
+| Event watchers (systemd) | `docker-watcher`, `file-watcher`, `npm-monitor`, `docker-events-ntfy` — all enabled + active | `systemctl is-active …` | yes |
+| Cron | 20 user lines + 4 root lines | `crontab -l; sudo crontab -l` | yes |
+| Healthcheck | 59 checks every 15 min with notification de-duplication and a two-stage tunnel check (the public `scripts/healthcheck.sh` is a trimmed version) | live `healthcheck.sh` | yes |
+| ntfy callers in this repo | **19** scripts call `ntfy_send` (backup 3, maintenance 3, monitoring 4, security 7, `healthcheck.sh`, `mullvad-rotate.sh`) | `grep -l ntfy_send $(git ls-files 'scripts/*.sh' 'scripts/*.py')` | yes (counted in the repo) |
+| Hypervisor | Proxmox VE 8.4.21 · kernel 6.8.12-42-pve | `pveversion` — see [proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab) | yes |
 
-| Metric | Value | Source |
-|---|---|---|
-| Open inbound ports at the router | **0** | Router admin UI — no forwards, period |
-| Services exposed to the internet | **0** directly; *N* via Cloudflare Tunnel + OAuth | Cloudflare Access policies |
-| Container count | **~40** | `docker ps -q \| wc -l` (including sidecars: Postgres, Redis, UniFi DB, Watchtower) |
-| Core services (non-sidecar) | **~30** | `docker/compose.yml` |
+## Not re-measured
 
-## Threats blocked
+| Metric | Last value | Last measured | Status |
+|---|---|---|---|
+| Inbound WAN ports at the router | none configured | April 2026 | No inbound WAN ports are configured on purpose (external access rides an outbound Cloudflare Tunnel); the router's port-forward table was **not re-verified** during the 2026-08-28 audit |
+| UFW drops, rolling 7 days | 22 701 packets | April 2026 | not re-measured |
+| Suricata IDS signature hits | see `fast.log` | April 2026 (bare-metal era) | **not deployed** in the current VM; config kept in `security/suricata/` as reference |
+| Host uptime / container uptime | 5 d+ | April 2026 | not re-measured |
+| RAM in use / CPU average | ~9 GB of 16 GB · ~10 % | April 2026 (bare metal, before the 10 GB VM cap) | not re-measured |
+| Power draw (idle / load) | ~80 W / ~200 W | 2026-07-03 | Scaphandre removed 2026-07-04; nothing collects host power any more. See [`cost.md`](cost.md) |
 
-Rolling 7-day window, aggregated across defensive layers:
+## What these numbers mean
 
-| Layer | Activity | Notes |
-|---|---|---|
-| **UFW** (perimeter drop) | **22,701** packets | `journalctl \| grep "\[UFW BLOCK\]"` |
-| **Suricata IDS** (signature alerts) | post-perimeter behavioural — see `fast.log` | `journalctl -u suricata` and `/var/log/suricata/fast.log` |
-| **fail2ban** (SSH bans, all-time) | **0** | `fail2ban-client status sshd` — nothing has gotten past the key-only gate on port 2222 to even try |
-| **Event-driven alerters** | every SSH login, sudo, fail2ban ban, Docker event | systemd units → ntfy → iPhone |
+- **0 fail2ban bans** is not because nobody tries — password auth is off and SSH listens on 2222, restricted to two admin IPs at the firewall, so there is nothing for fail2ban to react to.
+- **0 privileged containers, 44/44 no-new-privileges** is the state of the whole host, not just what this repo defines. Scrutiny reads SMART through `cap_add: [SYS_RAWIO]` plus device passthrough instead of `privileged`.
+- **90 % on the media disk** is the next thing to deal with; compute is not the bottleneck.
+- **Egress through Mullvad** applies to the whole VM: the VM resolves DNS through the tunnel's resolver, while AdGuard Home on the LAN address serves the other LAN clients. That is intentional.
 
-Suricata categorises detections by signature class — the rules enabled here cover emerging-threats, exploit-kit, malware, scan, dns, web-attacks, and policy violations. Most observed traffic is low-effort scanning from the modem's public IPv4; the interesting metric is that nothing escalates beyond UFW's drop layer.
-
-## Operational reliability
-
-| Metric | Value | Source |
-|---|---|---|
-| Host uptime | **5d+ continuous** at time of snapshot | `uptime` |
-| Container uptime (median, core services) | **5 days** | `docker ps --format '{{.Status}}'` |
-| Recovery time after container crash | **<60 seconds** | `docker_watcher.sh` systemd service — detects + restarts |
-| Healthcheck cadence | **every 15 minutes** | `scripts/healthcheck.sh` via cron → ntfy on failure |
-| Backup cadence | **nightly** (`${APPDATA_DIR}`) + **weekly** off-site verification | `backup_appdata` + `backup_verify` cron |
-
-## Capacity
-
-| Resource | Used | Status |
-|---|---|---|
-| CPU | ~10% avg, peaks ~60% during transcodes | Comfortable |
-| RAM | ~9 GB / 16 GB | Comfortable |
-| GPU VRAM | ~2 GB / 6 GB | Plenty |
-| System disk | 28% | Comfortable |
-| `${STORAGE_DIR}` | 68% | Comfortable |
-| `${MEDIA_DIR}` | **89%** | Next upgrade target |
-
-The next bottleneck is bulk storage, not compute — which is the correct shape of headroom for a media-heavy workload.
-
-## What these numbers actually mean
-
-- **Zero successful SSH brute-forces** isn't because nobody tried — it's because SSH rejects password auth entirely (and listens on port 2222, off the default scan path), so fail2ban never has to ban anyone. The real defence is the configuration, not the reaction.
-- **22k UFW drops/week** is mostly low-effort scanning from the 5G modem's public IPv4. The interesting number is that none of it got past UFW to a service.
-- **Suricata observes the post-perimeter** — anything UFW lets through is fingerprinted against signature rules. The IDS doesn't block (passive monitoring); it raises the visibility floor so suspicious behaviour generates an ntfy alert within seconds of `fast.log` recording it.
-- **Every SSH login generates a push to your iPhone.** If a notification arrives that you didn't initiate, you have seconds to react — that's the tripwire model: detection beats prevention when the prevention layer is already configured correctly.
-
-## How to reproduce these numbers
+## How to reproduce
 
 ```bash
-# UFW blocks (last 7 days)
-sudo journalctl --since "7 days ago" | grep -c "\[UFW BLOCK\]"
-
-# Suricata signature hits (last 7 days)
-sudo journalctl -u suricata --since "7 days ago" | grep -c "\[Drop\]\|\[\*\*\]"
-sudo tail -n 200 /var/log/suricata/fast.log
-
-# fail2ban state
+docker ps --format 'table {{.Names}}\t{{.Status}}' | tail -n +2 | wc -l
+docker inspect --format '{{.Name}} {{.HostConfig.Privileged}} {{.HostConfig.SecurityOpt}}' $(docker ps -q)
+docker ps --format '{{.Ports}}' | tr ',' '\n' | grep -c '0.0.0.0' || true
+sudo ufw status verbose
 sudo fail2ban-client status sshd
-
-# ntfy alerter activity (event-driven layers)
-journalctl -u docker-events-ntfy.service -u suricata-ntfy.service -u npm-monitor.service --since "24 hours ago"
-
-# Capacity
-df -h
-docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}'
+mullvad status; curl -s https://am.i.mullvad.net/json
+ip -6 addr show dev eth0; ip -6 route
+df -h / /mnt/storage /mnt/media
+systemctl is-active docker-watcher file-watcher npm-monitor docker-events-ntfy
 ```

@@ -5,9 +5,9 @@ The defense-in-depth pieces of the homelab.
 | File | Purpose |
 |---|---|
 | `ufw-baseline.sh` | Apply default-deny UFW with a minimal allowlist |
-| `fail2ban/jail.local` | SSH brute-force protection (Suricata covers post-perimeter behavioural detection) |
+| `fail2ban/jail.local` | SSH brute-force protection |
 | `ssh/sshd_config` | Hardened SSH: keys-only, strong crypto, explicit user allowlist |
-| `suricata/` | Passive IDS — config example + ntfy alert flow |
+| `suricata/` | Passive IDS — reference config from the bare-metal era; not deployed in the current VM |
 | `sysctl.d/99-homelab.conf` | Kernel tuning (swappiness + commented optionals) |
 | `hardening-checklist.md` | Copy-and-work-through list for any new Ubuntu host |
 | `vpn-killswitch.md` | How torrent traffic is bound to the VPN interface, with verification |

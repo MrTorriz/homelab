@@ -11,7 +11,9 @@ What happens if the host dies tonight. RTO/RPO targets, backup strategy, and the
 | **RTO** (Recovery Time Objective) | < 4 hours | Time from "host is dead" to "all services up on a replacement" |
 | **RPO** (Recovery Point Objective) | < 24 hours | Maximum acceptable data loss (since last backup) |
 
-These are realistic for a single-host homelab — not enterprise SLAs. The constraint is that backup runs once daily at 04:00.
+These are targets for a single-host homelab — not tested SLAs. The constraint is that backup runs once daily at 04:00 UTC.
+
+> **Last full restore:** the June 2026 move from bare metal into a Proxmox VM ([proxmox-homelab/docs/migration.md](https://github.com/MrTorriz/proxmox-homelab/blob/main/docs/migration.md)) was, in effect, a Scenario C restore from the appdata backup. No dry-run restore has been performed since (as of 2026-08-28).
 
 For data that can't tolerate 24 h loss (Nextcloud documents being actively edited, Immich photos taken today), the practical RPO is closer to "since the last sync from the source device" because the device itself still has the original.
 
@@ -35,7 +37,7 @@ The verification job is what makes this real. Untested backups are a guess. The 
 - All container appdata (`${APPDATA_DIR}/*`) — config, databases, state
 - Compose files and `.env` (encrypted)
 - System config: `/etc/ufw`, `/etc/fail2ban`, `/etc/ssh`, crontabs
-- The repo itself (`${HOME}/git/server/`) — but this also lives on GitHub
+- The private counterpart of this repo (live compose, scripts, `/etc`) — but that also lives on GitHub
 
 ### What's NOT backed up
 
@@ -78,7 +80,7 @@ RTO: 5–10 minutes per service.
    git clone https://github.com/MrTorriz/homelab.git ~/homelab
    cd ~/homelab
    sudo bash security/ufw-baseline.sh
-   sudo bash security/install-fail2ban.sh
+   sudo cp security/fail2ban/jail.local /etc/fail2ban/jail.local && sudo cp security/fail2ban/action.d/ntfy.conf /etc/fail2ban/action.d/
    ```
 
 3. Mount the data disks (they're untouched)
@@ -103,11 +105,11 @@ RTO: 2–3 hours.
 
 RTO: 4–8 hours assuming hardware is on hand. Add hardware-procurement time otherwise.
 
-Media is a separate question — `${MEDIA_DIR}` content (Plex library) would have to be re-acquired or restored from a separate cold backup if one exists. The recovery target above does **not** include media restoration; the homelab is functionally up without it.
+Media is a separate question — `${MEDIA_DIR}` content (media library) would have to be re-acquired or restored from a separate cold backup if one exists. The recovery target above does **not** include media restoration; the homelab is functionally up without it.
 
 ### Scenario D — Ransomware on the host
 
-**Likelihood:** Rare given UFW + fail2ban + no public-facing ports, but worth planning for.
+**Likelihood:** Rare given UFW + fail2ban + tunnel-only ingress, but worth planning for.
 
 1. Power off immediately. Do not reboot.
 2. Boot rescue media. Confirm extent of encryption.
@@ -131,7 +133,7 @@ Print this out. Keep it with the off-site backup credentials.
 - [ ] Restore `.env` files (encrypted, from off-site)
 - [ ] Mount `${MEDIA_DIR}` and `${STORAGE_DIR}` (existing or fresh)
 - [ ] Restore `${APPDATA_DIR}` from latest verified snapshot
-- [ ] Apply security baseline (`ufw-baseline.sh`, `install-fail2ban.sh`, SSH config)
+- [ ] Apply security baseline (`ufw-baseline.sh`, `cp security/fail2ban/jail.local /etc/fail2ban/`, SSH config)
 - [ ] `docker compose up -d`
 - [ ] Verify all containers reach healthy state
 - [ ] Test external access via Cloudflare Tunnel
@@ -163,4 +165,4 @@ The weekly `backup-verify.sh` is one half. The other half is doing a **dry-run r
 3. Time it
 4. Note what was missing or unclear in this doc — update
 
-This is the part most homelabs skip. It's also the part that makes the difference at 03:00.
+This is the part most homelabs skip. It's also the part that makes the difference at 03:00. Status 2026-08-28: the June migration counts as the last end-to-end run; the six-month dry-run is due.
