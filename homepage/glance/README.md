@@ -1,62 +1,44 @@
-# Glance — themed feed pages
+# Glance — start page
 
-Glance runs as four sibling containers (one default + three themed
-variants). Each one renders the same set of feeds and bookmarks but
-with a different colour palette, and is iframed into the **FEED** tab
-of the Homepage dashboard.
+Glance runs as two sibling containers: the default instance and an
+amber-themed variant. Both render the same feeds and bookmarks with a
+different colour palette. Homepage links to the default instance from
+its **Links** group.
 
-A small piece of custom JS in Homepage swaps the active iframe based
-on the currently selected Homepage theme so the embedded feed always
-matches the rest of the dashboard:
-
-| File | Container | Port (LAN) | Iframed when |
+| File | Container | Port (LAN) | Notes |
 |---|---|---|---|
-| `glance.yml` | `glance` | `8092` | Default theme |
-| `glance.deepspace.yml` | `glance-deepspace` | `8093` | Deep Space theme |
-| `glance.tokyo.yml` | `glance-tokyo` | `8094` | Tokyo Night theme |
-| `glance.amber.yml` | `glance-amber` | `8095` | Amber theme |
+| `glance.yml` | `glance` | `8092` | Default theme, full `pages:` definition |
+| `glance.amber.yml` | `glance-amber` | `8095` | Amber theme, same pages |
 
-## Why three theme variants?
-
-Glance applies its theme at config load, so swapping themes at runtime
-means swapping config files. Running four identical-but-themed
-instances is the simplest way to make the embedded feed match the
-parent dashboard's selected look — disk and RAM cost is negligible
-(the Glance image is ~30 MB and idle memory is a few MB per instance).
+Earlier the dashboard had a **FEED** tab that iframed one of three
+themed Glance instances (deep space / tokyo / amber) and swapped the
+active iframe from custom JS to match the Homepage theme. That setup
+was retired on 2026-06-21 together with the two extra instances; the
+amber variant stayed as an alternative start page.
 
 ## Sharing one `pages:` definition
 
-In the live setup, the three themed variants only carry a `theme:`
-block and pull the same `pages:` definition from a sibling
-`pages.yml` file using Glance's `$include` directive:
+In the live setup, the amber variant only carries a `theme:` block and
+pulls the `pages:` definition from a sibling `pages.yml` using Glance's
+`$include` directive:
 
 ```yaml
 pages:
   $include: pages.yml
 ```
 
-The variants in this repo ship with `pages: []` and a comment so the
+The variant in this repo ships with `pages: []` and a comment so the
 file is valid out of the box — copy the `pages:` block from
-`glance.yml` into each variant, or split it into a shared file and
-`$include` it.
+`glance.yml` into it, or split it into a shared file and `$include` it.
 
 ## Custom CSS
 
-All four instances mount the same `custom.css` from
+Both instances mount the same `custom.css` from
 `${APPDATA_DIR}/glance/custom.css` so layout tweaks (column widths,
 padding, font scaling) are written once. The CSS uses the Glance theme
 variables, so colour decisions stay in the YAML.
 
-## Embedding into Homepage
-
-Nginx Proxy Manager strips `X-Frame-Options` from the Glance upstream
-so Homepage can iframe it on the same origin. If you self-sign or use
-a non-public CA, browsers may need a one-off SSL exception for each
-Glance hostname before the iframe will render — visit each subdomain
-directly once and accept the certificate.
-
 ## Screenshot
 
-A screenshot of the three themes side-by-side lives at
-`../homepage.gif` (animated tab switch); a static stills variant can
-be dropped into `screenshot.png` next to this README if you prefer.
+The Glance card is visible in `../../docs/img/homepage.png` (Links
+group). There is no separate Glance capture.

@@ -37,7 +37,7 @@
   <text x="60" y="50" font-size="22" fill="#f5a623" font-weight="700" letter-spacing="2">HOMELAB</text>
   <text x="172" y="50" font-size="22" fill="#444" font-weight="300">/</text>
   <text x="190" y="50" font-size="22" fill="#e8e8e8" font-weight="300" letter-spacing="2">ARCHITECTURE</text>
-  <text x="60" y="72" font-size="11" fill="#666" letter-spacing="1">UBUNTU 24.04 · DOCKER · ~50 SERVICES · ZERO INBOUND PORTS</text>
+  <text x="60" y="72" font-size="11" fill="#666" letter-spacing="1">UBUNTU 24.04 · DOCKER · 44 CONTAINERS · 2026-08 · INGRESS: TUNNEL ONLY</text>
 
   <!-- corner registration marks (blueprint feel) -->
   <g stroke="#3a5a78" stroke-width="0.6" fill="none" stroke-opacity="0.4">
@@ -103,7 +103,7 @@
     <text x="290" y="261" fill="#f5a623" font-weight="600" letter-spacing="2">CLOUDFLARE TUNNEL</text>
     <text x="290" y="287">cloudflared</text>
     <text x="290" y="305" font-size="10" fill="#aaa">outbound only · OAuth gate</text>
-    <text x="290" y="324" font-size="9" fill="#5a8fb8">no public IP · zero forwards</text>
+    <text x="290" y="324" font-size="8" fill="#5a8fb8">router not re-verified 2026-08-28</text>
 
     <text x="540" y="261" fill="#f5a623" font-weight="600" letter-spacing="2">NGINX PROXY MGR</text>
     <text x="540" y="287">npm</text>
@@ -123,7 +123,7 @@
        BAND 3 — HOST (subdivided 3 columns)
        ================================================================ -->
   <text x="42" y="555" font-size="14" fill="#f5a623" letter-spacing="4" font-weight="700" transform="rotate(-90,42,555)">HOST</text>
-  <text x="60" y="555" font-size="9" fill="#8a5e1f" letter-spacing="2" transform="rotate(-90,60,555)">DOCKER · 50 CONTAINERS</text>
+  <text x="60" y="555" font-size="9" fill="#8a5e1f" letter-spacing="2" transform="rotate(-90,60,555)">DOCKER · 44 CONTAINERS</text>
 
   <!-- Detection sub-column header -->
   <text x="180" y="395" font-size="10" fill="#5a8fb8" letter-spacing="3" font-weight="600">DETECTION</text>
@@ -140,8 +140,8 @@
     <rect x="180" y="655" width="155" height="32" rx="2"/>
   </g>
   <g font-size="10" fill="#e8e8e8" text-anchor="middle">
-    <text x="257" y="430">Suricata IDS</text>
-    <text x="257" y="442" font-size="8" fill="#5a8fb8">af-packet · LAN tap</text>
+    <text x="257" y="430">fail2ban</text>
+    <text x="257" y="442" font-size="8" fill="#5a8fb8">sshd jail · ntfy action</text>
     <text x="257" y="470">file-watcher</text>
     <text x="257" y="482" font-size="8" fill="#5a8fb8">inotify · sshd, sudoers</text>
     <text x="257" y="510">docker-events</text>
@@ -153,13 +153,13 @@
     <text x="257" y="630">socket-proxy</text>
     <text x="257" y="642" font-size="8" fill="#5a8fb8">read-only docker API</text>
     <text x="257" y="670">ntfy shim</text>
-    <text x="257" y="682" font-size="8" fill="#5a8fb8">~20 callers · bearer</text>
+    <text x="257" y="682" font-size="8" fill="#5a8fb8">18 callers · bearer</text>
   </g>
 
   <!-- Apps sub-column header -->
   <text x="370" y="395" font-size="10" fill="#5a8fb8" letter-spacing="3" font-weight="600">APPLICATIONS</text>
   <line x1="370" y1="402" x2="775" y2="402" stroke="#5a8fb8" stroke-width="0.6" stroke-opacity="0.5"/>
-  <text x="775" y="395" font-size="8" fill="#3a5a78" text-anchor="end">~40 services</text>
+  <text x="775" y="395" font-size="8" fill="#3a5a78" text-anchor="end">apps + sidecars</text>
 
   <!-- 4 cols, 7 rows = 28 nodes (some merged for clarity) -->
   <g stroke="#5a8fb8" stroke-width="1" fill="none">
@@ -178,7 +178,7 @@
     <rect x="475" y="495" width="95" height="32" rx="2"/>
     <rect x="580" y="495" width="95" height="32" rx="2"/>
     <rect x="685" y="495" width="95" height="32" rx="2"/>
-    <!-- row 4: AI -->
+    <!-- row 4: sidecars -->
     <rect x="370" y="535" width="95" height="32" rx="2"/>
     <rect x="475" y="535" width="95" height="32" rx="2"/>
     <rect x="580" y="535" width="95" height="32" rx="2"/>
@@ -197,13 +197,13 @@
     <rect x="370" y="655" width="95" height="32" rx="2"/>
     <rect x="475" y="655" width="95" height="32" rx="2"/>
     <rect x="580" y="655" width="95" height="32" rx="2"/>
-    <rect x="685" y="655" width="95" height="32" rx="2"/>
+    <rect x="685" y="615" width="95" height="32" rx="2"/>
   </g>
-  <!-- qBittorrent special -->
-  <rect x="685" y="615" width="95" height="32" rx="2" fill="none" stroke="#f5a623" stroke-width="1.4" stroke-dasharray="4,2"/>
+  <!-- qBittorrent special (row 7, bottom-right so the VPN arrow enters from below) -->
+  <rect x="685" y="655" width="95" height="32" rx="2" fill="none" stroke="#f5a623" stroke-width="1.4" stroke-dasharray="4,2"/>
 
   <g font-size="10" fill="#e8e8e8" text-anchor="middle">
-    <text x="417" y="435">Plex</text>
+    <text x="417" y="435">Jellyfin</text>
     <text x="522" y="435">Immich</text>
     <text x="627" y="435">Nextcloud</text>
     <text x="732" y="435">Audiobookshelf</text>
@@ -218,25 +218,25 @@
     <text x="627" y="515">Seerr</text>
     <text x="732" y="515">FlareSolverr</text>
 
-    <text x="417" y="555">Ollama</text>
-    <text x="522" y="555">Open-WebUI</text>
-    <text x="627" y="555">Whisper</text>
+    <text x="417" y="555">diun</text>
+    <text x="522" y="555">Speedtest</text>
+    <text x="627" y="555">Immich ML</text>
     <text x="732" y="555">Homepage</text>
 
     <text x="417" y="595">AdGuard</text>
     <text x="522" y="595">ntfy</text>
     <text x="627" y="595">Miniflux</text>
-    <text x="732" y="595">UniFi</text>
+    <text x="732" y="595">Cloudflared</text>
 
     <text x="417" y="635">IT-Tools</text>
     <text x="522" y="635">draw.io</text>
-    <text x="627" y="635">netmap</text>
-    <text x="732" y="635" fill="#f5a623" font-weight="600">qBittorrent</text>
+    <text x="627" y="635">Miniflux DB</text>
+    <text x="732" y="635">Glance ×2</text>
 
     <text x="417" y="675">Portainer</text>
     <text x="522" y="675">Dozzle</text>
     <text x="627" y="675">Watchtower</text>
-    <text x="732" y="675">Glance ×4</text>
+    <text x="732" y="675" fill="#f5a623" font-weight="600">qBittorrent</text>
   </g>
 
   <!-- Observability sub-column header -->
@@ -257,9 +257,9 @@
     <text x="910" y="435">Prometheus</text>
     <text x="910" y="445" font-size="8" fill="#5a8fb8">90 d retention · 15 s scrape</text>
     <text x="910" y="475">Grafana</text>
-    <text x="910" y="485" font-size="8" fill="#5a8fb8">power · cost · trends</text>
-    <text x="910" y="515">Scaphandre</text>
-    <text x="910" y="525" font-size="8" fill="#5a8fb8">Intel RAPL · CPU+RAM watts</text>
+    <text x="910" y="485" font-size="8" fill="#5a8fb8">GPU power · host trends</text>
+    <text x="910" y="515">docker-proxy ×2</text>
+    <text x="910" y="525" font-size="8" fill="#5a8fb8">socket proxy · ro + rw</text>
     <text x="910" y="555">nvidia-gpu-exporter</text>
     <text x="910" y="565" font-size="8" fill="#5a8fb8">GPU watts · temp · VRAM</text>
     <text x="910" y="595">node + cAdvisor</text>
@@ -285,13 +285,13 @@
     <rect x="770" y="740" width="270" height="70" rx="2"/>
   </g>
   <g font-size="11" fill="#e8e8e8" text-anchor="middle">
-    <text x="315" y="765" font-weight="600">NVMe 500 GB</text>
+    <text x="315" y="765" font-weight="600">Boot 250 GB thin</text>
     <text x="315" y="783" font-size="9" fill="#5a8fb8">system · ${APPDATA_DIR}</text>
     <text x="315" y="797" font-size="9" fill="#5a8fb8">postgres · redis · configs</text>
 
     <text x="610" y="765" font-weight="600">HDD 4 TB</text>
     <text x="610" y="783" font-size="9" fill="#5a8fb8">${MEDIA_DIR}</text>
-    <text x="610" y="797" font-size="9" fill="#5a8fb8">plex library · downloads</text>
+    <text x="610" y="797" font-size="9" fill="#5a8fb8">jellyfin library · downloads</text>
 
     <text x="905" y="765" font-weight="600">HDD 4 TB</text>
     <text x="905" y="783" font-size="9" fill="#5a8fb8">${STORAGE_DIR}</text>
@@ -355,11 +355,11 @@
   <g stroke="#f5a623" stroke-width="1.5" stroke-dasharray="5,2" fill="none">
     <!-- mullvad endpoint (internet band) → tunnel rail top -->
     <path d="M 980 138 L 1108 138" marker-end="url(#arrowAmber)" stroke-opacity="0.8"/>
-    <!-- tunnel → qBittorrent — orthogonal route around Observability column
-         (down through gap x=1010-1108, left under row 7, up through gap x=780-810) -->
-    <path d="M 1108 631 L 1080 631 L 1080 700 L 795 700 L 795 631 L 780 631" marker-end="url(#arrowAmber)"/>
+    <!-- tunnel → qBittorrent — down through gap x=1010-1108, left below row 7,
+         then up into the bottom edge of the qBittorrent box (no bracket around Observability) -->
+    <path d="M 1108 671 L 1080 671 L 1080 706 L 732 706 L 732 689" marker-end="url(#arrowAmber)"/>
   </g>
-  <text x="937" y="694" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">torrent traffic only · :6881</text>
+  <text x="906" y="700" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">torrent traffic only · :6881</text>
   <text x="1042" y="132" font-size="8" fill="#f5a623" text-anchor="middle" letter-spacing="1">handshake</text>
 
   <!-- ================================================================

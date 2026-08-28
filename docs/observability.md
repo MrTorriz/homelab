@@ -9,10 +9,10 @@ How the homelab knows itself: what's measured, what triggers a push, and what ev
 | Layer | Question it answers | Where it lives |
 |---|---|---|
 | **Metrics** | "What's the host doing right now?" | Prometheus + Grafana (`monitoring/`) |
-| **Events** | "What just happened that I need to know about?" | Seven ntfy alerters (`scripts/security/`, `scripts/systemd/`) |
+| **Events** | "What just happened that I need to know about?" | 18 ntfy callers (`scripts/`), six of them event-driven |
 | **Health** | "Is anything broken?" | `healthcheck.sh` cron + Glances/Scrutiny dashboards |
 
-The metrics layer is the new addition. It exists because periodic healthcheck only catches failures — not *trends*. You don't notice that GPU temp creeps up 4°C per month until something dies; metrics make that obvious before it becomes an event.
+The metrics layer exists because a periodic healthcheck only catches failures — not *trends*. You don't notice that GPU temp creeps up 4°C per month until something dies; metrics make that obvious before it becomes an event.
 
 ---
 
@@ -25,33 +25,21 @@ The metrics layer is the new addition. It exists because periodic healthcheck on
 > Captured from an ephemeral demo stack with synthetic metrics — see
 > [`../monitoring/demo/`](../monitoring/demo/). Same dashboard JSON, fabricated values.
 
-Six containers, scraped on a 15-second interval, retained for 90 days:
+Five containers, scraped on a 15-second interval, retained for 90 days:
 
 | Container | Image | What it exports | Notes |
 |---|---|---|---|
 | `prometheus` | `prom/prometheus:latest` | itself | TSDB, 90 d retention, configurable via `PROMETHEUS_RETENTION` |
 | `grafana` | `grafana/grafana-oss:latest` | dashboards | OSS edition, OAuth via Cloudflare Access in front |
 | `node-exporter` | `prom/node-exporter:latest` | host CPU, memory, disk, network, uptime | host PID namespace + `/proc` + `/sys` bind mounts |
-| `scaphandre` | `hubblo/scaphandre:latest` | CPU+RAM watts via Intel RAPL | `privileged: true` required to read `/sys/class/powercap` |
 | `nvidia-gpu-exporter` | `utkuozdemir/nvidia_gpu_exporter:1.3.2` | GPU watts, temp, util, VRAM | `runtime: nvidia`; degrades cleanly if no GPU |
 | `cadvisor` | `gcr.io/cadvisor/cadvisor:latest` | per-container CPU, memory, I/O | sliceable by Docker labels |
 
-### What's actually measured
+### What is measured
 
-The interesting metric is **power**. Most homelab dashboards show CPU% and call it a day — that tells you scheduling pressure, not energy. Scaphandre reads Intel's Running Average Power Limit (RAPL) counters directly from the kernel, so the wattage figure is what the silicon reports drawing, not an estimate from a model. Combined with `nvidia-smi` for GPU power, the dashboard's *Total* panel is the actual wall-clock draw of the rig minus PSU loss, fans, and HDDs.
+Host CPU, memory, disk and network from node-exporter; per-container CPU, memory and I/O from cAdvisor; GPU watts, temperature, utilisation and VRAM from nvidia-gpu-exporter.
 
-### Scaphandre's protocol quirk
-
-Scaphandre exports OpenMetrics in a slightly older format. Prometheus 3.x defaults to a newer protocol that Scaphandre doesn't speak, so the scrape config has:
-
-```yaml
-- job_name: 'scaphandre'
-  fallback_scrape_protocol: PrometheusText0.0.4
-  static_configs:
-    - targets: ['scaphandre:8080']
-```
-
-Without that line you get blank panels and no error in the Prometheus log — the gotcha cost an evening. Documented here so the next person doesn't repeat it.
+> **Scaphandre — historical.** Until 2026-07-04 a sixth container, `hubblo/scaphandre`, read Intel RAPL counters and exported CPU+RAM watts. It needed a root-capable container and was dropped when the stack moved into a VM; nothing collects host power any more and the *Total* / *CPU + RAM* panels below are empty. If you run it on bare metal, keep the job-level `fallback_scrape_protocol: PrometheusText0.0.4` in the scrape config (see `monitoring/prometheus.yml.example`) — Prometheus 3.x defaults to OpenMetrics and silently returns blank panels otherwise.
 
 ### The dashboard — twelve panels, one story
 
@@ -59,8 +47,8 @@ Layout in `monitoring/grafana/dashboards/homelab-overview.json`:
 
 | # | Panel | Source query (PromQL) |
 |---|---|---|
-| 1 | Total power (CPU + GPU) | `(scaph_host_power_microwatts / 1e6) + nvidia_smi_power_draw_watts` |
-| 2 | CPU + RAM watts | `scaph_host_power_microwatts / 1e6` |
+| 1 | Total power (CPU + GPU) | `(scaph_host_power_microwatts / 1e6) + nvidia_smi_power_draw_watts` — empty since 2026-07-04 |
+| 2 | CPU + RAM watts | `scaph_host_power_microwatts / 1e6` — empty since 2026-07-04 |
 | 3 | GPU watts | `nvidia_smi_power_draw_watts` |
 | 4 | GPU temperature | `nvidia_smi_temperature_gpu` |
 | 5 | Power over time | three series stacked, last 6 h |
@@ -74,38 +62,38 @@ Layout in `monitoring/grafana/dashboards/homelab-overview.json`:
 
 Cost is parameterised so anyone forking the dashboard sets their own electricity price. Default is `2.0` (matching mainland-Europe order of magnitude) but the template variable accepts any float.
 
-### How the Homepage card works
+### How the Homepage cards work
 
-The `customapi` widget on the dashboard hits Prometheus directly with one URL-encoded PromQL that returns three labelled vectors:
+The `customapi` widgets on the dashboard hit Prometheus directly with one URL-encoded PromQL each. The Grafana tile asks for the two GPU series in one go:
 
 ```promql
-label_replace((scaph_host_power_microwatts/1e6) + on() group_left() nvidia_smi_power_draw_watts, "k","total","","") or
-label_replace( scaph_host_power_microwatts/1e6, "k","cpu","","") or
-label_replace( nvidia_smi_power_draw_watts,    "k","gpu","","")
+{__name__=~"nvidia_smi_power_draw_watts|nvidia_smi_temperature_gpu"}
 ```
 
-The `or` operator unions three `label_replace`-tagged scalars, giving Homepage a flat array `[total, cpu, gpu]` to map. The widget mappings extract index 0/1/2 with `value: "1"` (the value field in Prometheus' `[timestamp, value]` tuple). Refresh interval 30 s.
+and maps `result[0]` → *GPU W*, `result[1]` → *Temp*. The Nextcloud tile does the same trick for used/free bytes on `${STORAGE_DIR}` with two `label_replace` expressions joined by `or` — the label is needed because `or` compares label sets without `__name__`, and without it one of the two series is silently dropped. Widget mappings read index 0/1 with `value: "1"` (the value field of Prometheus' `[timestamp, value]` tuple). Refresh interval 30–60 s.
 
-This is more elegant than running a sidecar that pre-aggregates — Homepage talks directly to Prometheus, Prometheus does the math, Homepage renders. No extra process to fail.
+No sidecar pre-aggregates anything — Homepage talks to Prometheus, Prometheus does the math, Homepage renders.
 
 ---
 
-## Events layer — about 20 ntfy callers
+## Events layer — 18 ntfy callers
 
 The metrics layer answers "what is happening?". The events layer answers "what *just happened* that I need to know about *right now*?".
 
 <p align="center">
-  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, Suricata signature, file-watcher" width="780"/>
+  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature, file-watcher" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); the Suricata event shown here is not deployed in the current VM.</sub>
 </p>
 
-The high-signal layer is **seven security event sources** — these are the ones that wake you up in the middle of the night:
+The high-signal layer is the **event-driven security sources** — these are the ones that wake you up in the middle of the night:
 
 | Source | Trigger | Hook | Priority |
 |---|---|---|---|
 | `ssh-login-notify` | every successful SSH session | PAM `pam_exec` on `sshd` | low if LAN, **urgent** if external |
 | `sudo-notify` | interactive sudo invocation | PAM `pam_exec` on `sudo` | high |
 | `fail2ban-notify` | IP banned/unbanned in any jail | fail2ban action hook | high on ban |
-| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` | high |
+| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — **bare-metal era, not deployed in the current VM** | high |
 | `docker-events-ntfy` | container start/stop/die/oom | systemd unit on Docker events stream | mixed |
 | `npm-monitor` | path scans, 401 spam, sqlmap signatures | systemd unit tailing NPM access logs | high |
 | `file-watcher` | mutation in critical paths (sshd config, sudoers, cron, authorized_keys) | systemd unit on inotify | urgent |
@@ -127,7 +115,7 @@ In addition there are **operational alerters** that share the same ntfy infrastr
 | `backup-appdata` | nightly | snapshot result |
 | `offsite-backup` | nightly | rclone push result |
 
-Together that's **roughly 20 distinct callers** to a single shared `ntfy_send` shim. The interesting design choice in the event tier is that **every** successful SSH login pushes — not just failed ones. Failed logins are noise (UFW already drops most of them); successful logins are tripwires. If a notification arrives that you didn't initiate, you have seconds to react.
+Together that's **18 scripts in `scripts/`** calling a single shared `ntfy_send` shim (counted with `grep -l ntfy_send` minus `lib.sh`, which defines it — 2026-08-28), plus the fail2ban action and diun's built-in ntfy notifier. The interesting design choice in the event tier is that **every** successful SSH login pushes — not just failed ones. Failed logins are noise (UFW already drops most of them); successful logins are tripwires. If a notification arrives that you didn't initiate, you have seconds to react.
 
 ### Admin-noise filtering
 
@@ -155,4 +143,4 @@ Already covered in `scripts/healthcheck.sh`. Runs every 15 minutes, checks conta
 
 The three layers are mutually independent on purpose. Metrics requires Prometheus to be up. Events require systemd + ntfy. Health requires cron + the healthcheck script. If any one layer breaks, the other two still work. That's not a happy coincidence — it's why each is implemented separately rather than as one orchestrating system.
 
-For a single-host homelab this is enough. An enterprise would add SIEM correlation, a NDR appliance, a separate monitoring host, distributed tracing, and a synthetic-checks pipeline. None of that adds anything for one box; this stack is the right complexity for the actual workload.
+For a single-host homelab this is enough. A separate monitoring host would remove the last shared failure point; nothing else on the usual list adds anything for one box.

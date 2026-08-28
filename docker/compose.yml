@@ -1,10 +1,12 @@
 # ────────────────────────────────────────────────────────────
 # Homelab — Docker Compose stack
 #
-# A curated, self-hosted stack covering media, photos, AI,
-# productivity, security, observability and reverse proxy.
+# A self-hosted stack covering media, photos, files & sync,
+# DNS, security, observability and reverse proxy.
+# 43 services here + 1 personal service (private image)
+# = 44 containers on the live host (2026-08-28).
 # Every container runs with `no-new-privileges` and binds only
-# to the LAN interface.
+# to the LAN interface (or 127.0.0.1).
 #
 # Setup:  cp .env.example .env  →  edit  →  docker compose up -d
 # ────────────────────────────────────────────────────────────
@@ -15,6 +17,8 @@ services:
   npm:
     image: jc21/nginx-proxy-manager:latest
     container_name: npm
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     ports:
@@ -44,7 +48,7 @@ services:
     ports:
       - "${LAN_IP}:3000:3000"
     depends_on: [docker-proxy]
-    networks: [default]
+    networks: [default, socket-ro]
 
   glance:
     image: glanceapp/glance:latest
@@ -58,34 +62,8 @@ services:
       - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
     networks: [default]
 
-  # 3 themed Glance instances are embedded as iframes on the Homepage FEED tab.
-  # Custom JS swaps the active iframe based on the selected Homepage theme.
-  glance-deepspace:
-    image: glanceapp/glance:latest
-    container_name: glance-deepspace
-    restart: always
-    security_opt: [no-new-privileges:true]
-    ports:
-      - "${LAN_IP}:8093:8080"
-    volumes:
-      - ${APPDATA_DIR}/glance/glance.deepspace.yml:/app/config/glance.yml:ro
-      - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
-      - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
-    networks: [default]
-
-  glance-tokyo:
-    image: glanceapp/glance:latest
-    container_name: glance-tokyo
-    restart: always
-    security_opt: [no-new-privileges:true]
-    ports:
-      - "${LAN_IP}:8094:8080"
-    volumes:
-      - ${APPDATA_DIR}/glance/glance.tokyo.yml:/app/config/glance.yml:ro
-      - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
-      - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
-    networks: [default]
-
+  # Second Glance instance with a different theme, kept as an alternative
+  # start page. (Theme-switching via Homepage iframes was retired 2026-06-21.)
   glance-amber:
     image: glanceapp/glance:latest
     container_name: glance-amber
@@ -100,6 +78,12 @@ services:
     networks: [default]
 
   # ── Docker management ────────────────────────────────────
+  # Two socket proxies with different blast radius (since 2026-08-23):
+  #   docker-proxy    read-only API (POST=0) on `socket-ro`, consumed by
+  #                   homepage, dozzle, diun and glances (via 127.0.0.1:2375)
+  #   docker-proxy-rw write API (POST=1) on the internal `socket-rw` net,
+  #                   reachable only by the containers that must mutate
+  #                   state (watchtower, portainer). No published ports.
   docker-proxy:
     image: tecnativa/docker-socket-proxy:latest
     container_name: docker-proxy
@@ -115,10 +99,28 @@ services:
       - SERVICES=1
       - TASKS=1
       - VOLUMES=1
+      - POST=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [socket-ro]
+
+  docker-proxy-rw:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-proxy-rw
+    restart: always
+    security_opt: [no-new-privileges:true]
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      - SERVICES=1
+      - TASKS=1
+      - VOLUMES=1
       - POST=1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks: [default]
+    networks: [socket-rw]
 
   portainer:
     image: portainer/portainer-ce:latest
@@ -126,13 +128,13 @@ services:
     restart: always
     security_opt: [no-new-privileges:true]
     environment:
-      - DOCKER_HOST=tcp://docker-proxy:2375
+      - DOCKER_HOST=tcp://docker-proxy-rw:2375
     volumes:
       - ${APPDATA_DIR}/portainer:/data
     ports:
       - "${LAN_IP}:9000:9000"
-    depends_on: [docker-proxy]
-    networks: [default]
+    depends_on: [docker-proxy-rw]
+    networks: [default, socket-rw]
 
   dozzle:
     image: amir20/dozzle:latest
@@ -144,36 +146,85 @@ services:
     ports:
       - "${LAN_IP}:8888:8080"
     depends_on: [docker-proxy]
-    networks: [default]
+    networks: [default, socket-ro]
 
+  # containrrr/watchtower is archived; the nicholas-fedor fork is maintained.
+  # Containers that must not be auto-updated carry the label
+  # `com.centurylinklabs.watchtower.enable=false` (reverse proxy, databases,
+  # DNS, tunnel, SMART monitor, Immich).
   watchtower:
-    image: containrrr/watchtower
+    image: ghcr.io/nicholas-fedor/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     environment:
-      - DOCKER_HOST=tcp://docker-proxy:2375
+      - DOCKER_HOST=tcp://docker-proxy-rw:2375
+      - DOCKER_API_VERSION=1.45
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+      # The host runs cron in UTC while the other containers use ${TZ}.
+      # This container is pinned to UTC so the schedule below can be read
+      # side by side with `crontab -l` without converting.
+      # 02:00 UTC deliberately sits before the backup chain (appdata backup
+      # 04:00 UTC, offsite rclone 04:30 UTC, running 4-7 h). Never schedule
+      # restarts inside 04-11 UTC: the offsite job syncs appdata live and
+      # containers restarting mid-sync produce an inconsistent copy.
+      - WATCHTOWER_SCHEDULE=0 0 2 * * *
+      - TZ=UTC
+    depends_on: [docker-proxy-rw]
+    networks: [default, socket-rw]
+
+  # Notify-only image radar: checks registries weekly (Mon 09:00) and posts
+  # to ntfy. It never pulls or restarts anything, so it only needs the
+  # read-only proxy.
+  diun:
+    image: crazymax/diun:latest
+    container_name: diun
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    environment:
       - TZ=${TZ}
-    depends_on: [docker-proxy]
-    networks: [default]
+      - DIUN_WATCH_SCHEDULE=0 0 9 * * 1
+      - DIUN_WATCH_JITTER=30s
+      - DIUN_WATCH_FIRSTCHECKNOTIF=false
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_DOCKER_ENDPOINT=tcp://docker-proxy:2375
+      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
+      - DIUN_NOTIF_NTFY_ENDPOINT=http://ntfy
+      - DIUN_NOTIF_NTFY_TOPIC=${NTFY_TOPIC}
+      - DIUN_NOTIF_NTFY_TOKEN=${NTFY_TOKEN}
+      - DIUN_NOTIF_NTFY_PRIORITY=3
+    volumes:
+      - ${APPDATA_DIR}/diun:/data
+    depends_on: [docker-proxy, ntfy]
+    networks: [default, socket-ro]
 
   # ── Media stack ──────────────────────────────────────────
-  plex:
-    image: lscr.io/linuxserver/plex:latest
-    container_name: plex
-    network_mode: host
+  # Jellyfin replaced Plex on 2026-06-20. NVENC via the NVIDIA runtime.
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    runtime: nvidia
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8096/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - VERSION=docker
       - TZ=${TZ}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     volumes:
-      - ${APPDATA_DIR}/plex:/config
-      - ${MEDIA_DIR}:/mnt/media
-    restart: unless-stopped
+      - ${APPDATA_DIR}/jellyfin:/config
+      - ${MEDIA_DIR}:/mnt/media:ro
+      - ${STORAGE_DIR}/data:/data:ro
+    ports:
+      - "${LAN_IP}:8096:8096"
+    networks: [default]
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
@@ -357,6 +408,8 @@ services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
     container_name: immich_server
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     runtime: nvidia
@@ -375,6 +428,8 @@ services:
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}-cuda
     container_name: immich_machine_learning
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     runtime: nvidia
@@ -389,6 +444,8 @@ services:
   immich-redis:
     image: redis:6.2-alpine
     container_name: immich_redis
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     networks: [default]
@@ -396,6 +453,8 @@ services:
   immich-postgres:
     image: tensorchord/pgvecto-rs:pg14-v0.2.0
     container_name: immich_postgres
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     environment:
@@ -413,6 +472,8 @@ services:
   nextcloud:
     image: nextcloud:30-apache
     container_name: nextcloud
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     environment:
@@ -443,6 +504,8 @@ services:
   nextcloud-db:
     image: postgres:16-alpine
     container_name: nextcloud-db
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     environment:
@@ -463,71 +526,12 @@ services:
       - ${APPDATA_DIR}/nextcloud-redis:/data
     networks: [default]
 
-  # ── Local LLM stack (GPU) ────────────────────────────────
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-      - OLLAMA_KEEP_ALIVE=10m
-    volumes:
-      - ${APPDATA_DIR}/ollama:/root/.ollama
-    ports:
-      - "${LAN_IP}:11434:11434"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    networks: [default]
-
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
-      - WEBUI_AUTH=true
-      - ENABLE_SIGNUP=true
-      - DEFAULT_USER_ROLE=pending
-    volumes:
-      - ${APPDATA_DIR}/open-webui:/app/backend/data
-    ports:
-      - "${LAN_IP}:3333:8080"
-    depends_on: [ollama]
-    networks: [default]
-
-  # ── Speech-to-text (GPU) ─────────────────────────────────
-  # Used by Bazarr for offline subtitle generation from Plex audio tracks.
-  faster-whisper:
-    image: onerahmet/openai-whisper-asr-webservice:latest-gpu
-    container_name: faster-whisper
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    environment:
-      - ASR_MODEL=small
-      - ASR_ENGINE=faster_whisper
-    ports:
-      - "${LAN_IP}:9001:9000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    networks: [default]
-
   # ── Network-wide DNS / ad-blocking ───────────────────────
   adguardhome:
     image: adguard/adguardhome
     container_name: adguardhome
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     network_mode: host
     security_opt: [no-new-privileges:true]
@@ -539,6 +543,8 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     command: tunnel --loglevel info run
@@ -568,6 +574,8 @@ services:
     # Reads SMART data — needs raw disk access (acceptable trade-off)
     image: ghcr.io/analogj/scrutiny:master-omnibus
     container_name: scrutiny
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_add: [SYS_RAWIO]
@@ -637,6 +645,8 @@ services:
   miniflux-db:
     image: postgres:16-alpine
     container_name: miniflux-db
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
     environment:
@@ -666,9 +676,10 @@ services:
       - "${LAN_IP}:8108:8080"
     networks: [default]
 
-  # ── Observability (Prometheus + Grafana + power) ─────────
-  # Scrapes node-exporter (host metrics), scaphandre (CPU/RAM watts via RAPL),
-  # nvidia-gpu-exporter (GPU watts/temp) and cadvisor (per-container metrics).
+  # ── Observability (Prometheus + Grafana) ─────────────────
+  # Scrapes node-exporter (host metrics), nvidia-gpu-exporter (GPU watts/temp)
+  # and cadvisor (per-container metrics). Scaphandre (RAPL power) was dropped
+  # 2026-07-04; host power is no longer collected.
   # Grafana provisioning files live in `${APPDATA_DIR}/grafana/provisioning/`
   # — see `../monitoring/` in the repo for example configs and the dashboard.
   prometheus:
@@ -729,19 +740,6 @@ services:
     pid: host
     networks: [default]
 
-  scaphandre:
-    # Reads Intel RAPL counters via /sys/class/powercap — needs privileged.
-    # Exposes scaph_host_power_microwatts on :8080 in Prometheus text format.
-    image: hubblo/scaphandre:latest
-    container_name: scaphandre
-    restart: unless-stopped
-    privileged: true
-    command: prometheus
-    volumes:
-      - /sys/class/powercap:/sys/class/powercap:ro
-      - /proc:/proc:ro
-    networks: [default]
-
   nvidia-gpu-exporter:
     image: utkuozdemir/nvidia_gpu_exporter:1.3.2
     container_name: nvidia-gpu-exporter
@@ -767,63 +765,20 @@ services:
       - /dev/kmsg
     networks: [default]
 
-  # ── Network management ───────────────────────────────────
-  # UniFi Network Application (controller for Ubiquiti gear) backed by
-  # MongoDB 4.4. Mongo bootstrap user is created from an init script in
-  # ${APPDATA_DIR}/unifi-db-init/init-mongo.js using the env vars below.
-  # netmap is a tiny static-HTML viewer (nginx:alpine) that renders a
-  # generated network map (Nmap → HTML) under ${APPDATA_DIR}/netmap.
-  unifi-network-application:
-    image: lscr.io/linuxserver/unifi-network-application:latest
-    container_name: unifi-network-application
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-      - MONGO_USER=${UNIFI_DB_USER}
-      - MONGO_PASS=${UNIFI_DB_PASSWORD}
-      - MONGO_HOST=unifi-db
-      - MONGO_PORT=27017
-      - MONGO_DBNAME=${UNIFI_DB_NAME}
-      - MEM_LIMIT=1024
-      - MEM_STARTUP=1024
-    volumes:
-      - ${APPDATA_DIR}/unifi:/config
-    ports:
-      - "${LAN_IP}:8443:8443"
-      - "${LAN_IP}:3478:3478/udp"
-      - "${LAN_IP}:10001:10001/udp"
-      - "${LAN_IP}:8083:8080"
-      - "${LAN_IP}:1900:1900/udp"
-      - "${LAN_IP}:8843:8843"
-      - "${LAN_IP}:8880:8880"
-      - "${LAN_IP}:6789:6789"
-      - "${LAN_IP}:5514:5514/udp"
-    depends_on: [unifi-db]
-    networks: [default]
-
-  unifi-db:
-    image: mongo:4.4
-    container_name: unifi-db
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    volumes:
-      - ${APPDATA_DIR}/unifi-db:/data/db
-      - ${APPDATA_DIR}/unifi-db-init:/docker-entrypoint-initdb.d:ro
-    networks: [default]
-
-  netmap:
-    image: nginx:alpine
-    container_name: netmap
-    restart: unless-stopped
-    security_opt: [no-new-privileges:true]
-    volumes:
-      - ${APPDATA_DIR}/netmap:/usr/share/nginx/html:ro
-    networks: [default]
-
 networks:
   default:
     name: homelab
     driver: bridge
+  # Write-capable socket proxy lives here. `internal: true` means no route
+  # to the outside and no port publishing — only members can talk to it.
+  socket-rw:
+    name: socket-rw
+    internal: true
+  # Read-only socket proxy. The proxy used to sit on the default network,
+  # so any container could ask it for inspect data (including env vars) of
+  # every other container. Now only homepage, dozzle and diun are members.
+  # Not `internal`: glances runs with network_mode: host and reaches the
+  # proxy through the 127.0.0.1:2375 port mapping, which does not work on an
+  # internal network.
+  socket-ro:
+    name: socket-ro

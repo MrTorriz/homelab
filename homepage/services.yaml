@@ -1,11 +1,11 @@
 # Homepage services config — group-by-row layout
 #
-# Replace `example.com` with your domain before deploying.
-# `container:` entries are auto-discovered via the docker-socket-proxy.
+# Mirrors the live dashboard as of 2026-08-28, with the domain replaced by
+# `example.com` and personal tiles removed.
+# `container:` entries are auto-discovered via the read-only docker-socket-proxy.
 # `{{HOMEPAGE_VAR_*}}` placeholders are pulled from Homepage's own .env.
 
-# ── Tab 1: DECK ─────────────────────────────────────────────
-# Row 1 — 4 balanced groups (Network / System / Media / Links)
+# Row 1 — four balanced groups (Network / System / Media / Links)
 
 - Network:
     - AdGuard Home:
@@ -47,7 +47,7 @@
         description: Internet speed monitoring
         widget:
           type: speedtest
-          url: http://speedtest:80
+          url: http://${LAN_IP}:8765
           fields: ["download", "upload"]
 
 - System:
@@ -61,24 +61,50 @@
           url: http://portainer:9000
           env: 3
           key: '{{HOMEPAGE_VAR_PORTAINER_KEY}}'
-    - Dozzle:
-        icon: dozzle.png
-        href: https://dozzle.example.com
-        container: dozzle
-        description: Container logs
     - Nextcloud:
         icon: nextcloud.png
         href: https://cloud.example.com
         container: nextcloud
         description: Laptop, iPhone & server sync
+        widget:
+          # Used/free on the storage volume, read from Prometheus (node-exporter)
+          # rather than the Glances API: Glances 4.5.x dropped the v3 API and its
+          # fs plugin returns an empty list inside a container.
+          # label_replace is required: Prometheus `or` compares label sets
+          # without __name__, so without the `k` label the two series collide
+          # and one is silently dropped. Order: result[0] = used, result[1] = free.
+          type: customapi
+          url: "http://prometheus:9090/api/v1/query?query=\
+            label_replace%28node_filesystem_size_bytes%7Bmountpoint%3D%22%2Fmnt%2Fstorage%22%7D%20-%20\
+            node_filesystem_avail_bytes%7Bmountpoint%3D%22%2Fmnt%2Fstorage%22%7D%2C%20%22k%22%2C%20%22a_used%22%2C%20%22%22%2C%20%22%22%29\
+            %20or%20label_replace%28node_filesystem_avail_bytes%7Bmountpoint%3D%22%2Fmnt%2Fstorage%22%7D%2C%20%22k%22%2C%20%22b_free%22%2C%20%22%22%2C%20%22%22%29"
+          refreshInterval: 60000
+          mappings:
+            - field:
+                data:
+                  result:
+                    "0":
+                      value: "1"
+              label: Used
+              format: bytes
+            - field:
+                data:
+                  result:
+                    "1":
+                      value: "1"
+              label: Free
+              format: bytes
     - Grafana:
         icon: grafana.png
         href: https://grafana.example.com/d/homelab-overview
         container: grafana
         description: Server stats & energy
         widget:
+          # GPU power + temperature from nvidia-gpu-exporter. Host power used
+          # to come from Scaphandre (removed 2026-07-04).
           type: customapi
-          url: http://prometheus:9090/api/v1/query?query=label_replace%28%28scaph_host_power_microwatts%2F1000000%29%2Bon%28%29group_left%28%29nvidia_smi_power_draw_watts%2C%22k%22%2C%22total%22%2C%22%22%2C%22%22%29%20or%20label_replace%28scaph_host_power_microwatts%2F1000000%2C%22k%22%2C%22cpu%22%2C%22%22%2C%22%22%29%20or%20label_replace%28nvidia_smi_power_draw_watts%2C%22k%22%2C%22gpu%22%2C%22%22%2C%22%22%29
+          url: "http://prometheus:9090/api/v1/query?query=\
+            %7B__name__%3D~%22nvidia_smi_power_draw_watts%7Cnvidia_smi_temperature_gpu%22%7D"
           refreshInterval: 30000
           mappings:
             - field:
@@ -86,7 +112,7 @@
                   result:
                     "0":
                       value: "1"
-              label: Total
+              label: GPU
               suffix: " W"
               format: float
             - field:
@@ -94,34 +120,74 @@
                   result:
                     "1":
                       value: "1"
-              label: CPU
-              suffix: " W"
-              format: float
-            - field:
-                data:
-                  result:
-                    "2":
-                      value: "1"
-              label: GPU
-              suffix: " W"
+              label: Temp
+              suffix: "°C"
               format: float
     - Scrutiny:
         icon: scrutiny.png
         href: https://scrutiny.example.com
         container: scrutiny
         description: Disk health monitoring
+        widget:
+          # Scrutiny keys devices by NVMe serial / SATA WWN. Replace the
+          # placeholders with the identifiers shown at /api/summary on your box.
+          type: customapi
+          url: http://scrutiny:8080/api/summary
+          refreshInterval: 300000
+          mappings:
+            - field:
+                data:
+                  summary:
+                    "<nvme-serial>":
+                      smart: temp
+              label: NVMe
+              suffix: "°C"
+            - field:
+                data:
+                  summary:
+                    "<hdd-wwn-1>":
+                      smart: temp
+              label: HDD1
+              suffix: "°C"
+            - field:
+                data:
+                  summary:
+                    "<hdd-wwn-2>":
+                      smart: temp
+              label: HDD2
+              suffix: "°C"
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.example.com
+        container: dozzle
+        description: Container logs
+        widget:
+          # Running-container count from cadvisor via Prometheus.
+          type: customapi
+          url: http://prometheus:9090/api/v1/query?query=count(container_last_seen%7Bname!%3D%22%22%7D)
+          refreshInterval: 60000
+          mappings:
+            - field:
+                data:
+                  result:
+                    "0":
+                      value: "1"
+              label: Containers
+              format: number
 
 - Media:
-    - Plex:
-        icon: plex.png
-        href: https://plex.example.com
-        container: plex
+    - Jellyfin:
+        icon: jellyfin.png
+        href: https://jellyfin.example.com
+        container: jellyfin
         description: Media streaming server
         widget:
-          type: plex
-          url: http://${LAN_IP}:32400
-          key: '{{HOMEPAGE_VAR_PLEX_TOKEN}}'
-          fields: ["albums", "movies", "tv"]
+          type: jellyfin
+          url: http://jellyfin:8096
+          key: '{{HOMEPAGE_VAR_JELLYFIN_KEY}}'
+          enableBlocks: true
+          enableNowPlaying: false
+          fields: ["movies", "series", "songs"]
     - qBittorrent:
         icon: qbittorrent.png
         href: https://qbittorrent.example.com
@@ -135,14 +201,14 @@
           fields: ["leech", "seed", "download"]
     - Audiobookshelf:
         icon: audiobookshelf.png
-        href: https://abs.example.com
+        href: https://audiobookshelf.example.com
         container: audiobookshelf
         description: Audiobook library
         widget:
           type: audiobookshelf
           url: http://audiobookshelf:80
           key: '{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}'
-          fields: ["books"]
+          fields: ["books", "podcasts"]
     - Immich:
         icon: immich.png
         href: https://immich.example.com
@@ -167,20 +233,30 @@
         container: it-tools
         description: Developer utilities
     - Draw.io:
-        icon: drawio.png
+        icon: draw-io.png
         href: https://drawio.example.com
         container: drawio
-        description: Network & system diagrams
-    - LLM:
-        icon: mdi-chat-processing
-        href: https://chat.example.com
-        container: open-webui
-        description: Local chat UI (Ollama)
-    - Faster Whisper:
-        icon: si-openai
-        href: https://whisper.example.com
-        container: faster-whisper
-        description: Speech-to-text (GPU)
+        description: Proxmox topology
+    - Proxmox VE:
+        icon: proxmox.png
+        href: https://proxmox.example.com
+        description: Hypervisor web UI
+        siteMonitor: https://192.168.1.4:8006
+    - GitHub:
+        icon: github.png
+        href: https://github.com
+        description: Public repos
+        siteMonitor: https://github.com
+    - Router:
+        icon: mdi-router-wireless
+        href: http://192.168.1.1
+        description: ISP gateway
+        siteMonitor: https://192.168.1.1
+    - Glance:
+        icon: mdi-newspaper-variant-multiple
+        href: https://glance.example.com
+        container: glance
+        description: News & RSS feed
 
 # Row 2 — *arr stack full-width
 
@@ -256,16 +332,3 @@
         icon: flaresolverr.png
         container: flaresolverr
         description: Cloudflare bypass
-
-# ── Tab 2: FEED ─────────────────────────────────────────────
-# Three themed Glance instances embedded as iframes.
-# custom.js swaps the iframe src based on the active Homepage theme
-# (default → glance-deepspace, tokyo → glance-tokyo, amber → glance-amber).
-
-- Glance:
-    - News & Tech:
-        icon: mdi-newspaper-variant-multiple
-        widget:
-          type: iframe
-          src: https://glance.example.com
-          classes: h-full
