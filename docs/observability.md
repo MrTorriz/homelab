@@ -95,7 +95,9 @@ This is more elegant than running a sidecar that pre-aggregates — Homepage tal
 The metrics layer answers "what is happening?". The events layer answers "what *just happened* that I need to know about *right now*?".
 
 <p align="center">
-  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, Suricata signature, file-watcher" width="780"/>
+  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature, file-watcher" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); the Suricata event shown here is not deployed in the current VM.</sub>
 </p>
 
 The high-signal layer is **seven security event sources** — these are the ones that wake you up in the middle of the night:

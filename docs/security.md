@@ -53,6 +53,8 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` pr
 
 <p align="center">
   <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh comparing qBittorrent egress IP vs host egress IP" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); not a live capture.</sub>
 </p>
 
 ### 2. Network
@@ -114,7 +116,9 @@ UFW stops what shouldn't get in. fail2ban stops what's hammering known login sur
 **Honest limits.** TLS-encrypted traffic is opaque — Suricata sees the SNI, JA3 fingerprint, certificate, and timing, but not the payload. That's enough to flag "this device is talking to a known C2 hostname" but not enough to read what's said. Inline blocking is deliberately off; the trade-off is that Suricata detects, fail2ban and UFW respond. For a single-host LAN this split (perimeter / brute-force / behavioural) is enough; an enterprise would add NDR and SIEM correlation on top.
 
 <p align="center">
-  <img src="img/alerting.gif" alt="fail2ban status + Suricata fast.log tail with realistic IDS alerts" width="780"/>
+  <img src="img/alerting.gif" alt="fail2ban status + IDS fast.log tail with example alerts" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); Suricata shown here is not deployed in the current VM.</sub>
 </p>
 
 ## Event-driven alerting

@@ -64,6 +64,8 @@ Each subdirectory holds standalone scripts that source `../lib.sh`. Read the hea
 
 <p align="center">
   <img src="../docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); container count and disk figures predate the 2026-08 snapshot.</sub>
 </p>
 
 The full schedule that ties these together lives in [`crontab.example`](crontab.example).

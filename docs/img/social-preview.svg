@@ -22,7 +22,7 @@
 
   <!-- tagline -->
   <text x="60" y="250" font-size="26" fill="#8b949e">
-    Self-hosted infrastructure as code · Ubuntu 24.04 · ~50 Docker services
+    Sanitized reference of a real homelab · 44 containers · 2026-08
   </text>
 
   <!-- accent line -->
@@ -32,33 +32,33 @@
        column centers at x = 205, 495, 785, 1075 (60 px margin both sides) -->
   <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" text-anchor="middle">
     <g transform="translate(205, 360)">
-      <text font-size="56" font-weight="700" fill="#3fb950">0</text>
-      <text y="36" font-size="18" fill="#8b949e">open inbound</text>
-      <text y="58" font-size="18" fill="#8b949e">ports</text>
+      <text font-size="56" font-weight="700" fill="#3fb950">44</text>
+      <text y="36" font-size="18" fill="#8b949e">containers</text>
+      <text y="58" font-size="18" fill="#8b949e">one VM</text>
     </g>
 
     <g transform="translate(495, 360)">
-      <text font-size="56" font-weight="700" fill="#2f81f7">~50</text>
-      <text y="36" font-size="18" fill="#8b949e">containerised</text>
-      <text y="58" font-size="18" fill="#8b949e">services</text>
+      <text font-size="56" font-weight="700" fill="#2f81f7">tunnel</text>
+      <text y="36" font-size="18" fill="#8b949e">only</text>
+      <text y="58" font-size="18" fill="#8b949e">ingress</text>
     </g>
 
     <g transform="translate(785, 360)">
-      <text font-size="56" font-weight="700" fill="#e3b341">22k+</text>
-      <text y="36" font-size="18" fill="#8b949e">weekly UFW</text>
-      <text y="58" font-size="18" fill="#8b949e">drops</text>
+      <text font-size="56" font-weight="700" fill="#e3b341">6 VMs</text>
+      <text y="36" font-size="18" fill="#8b949e">Proxmox VE</text>
+      <text y="58" font-size="18" fill="#8b949e">8.4</text>
     </g>
 
     <g transform="translate(1075, 360)">
-      <text font-size="56" font-weight="700" fill="#f85149">0</text>
-      <text y="36" font-size="18" fill="#8b949e">SSH brute</text>
-      <text y="58" font-size="18" fill="#8b949e">(key-only)</text>
+      <text font-size="56" font-weight="700" fill="#f85149">19</text>
+      <text y="36" font-size="18" fill="#8b949e">ntfy</text>
+      <text y="58" font-size="18" fill="#8b949e">callers</text>
     </g>
   </g>
 
   <!-- bottom strip: tags -->
   <g transform="translate(60, 560)" font-size="18" fill="#8b949e">
-    <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>infrastructure-as-code</text>
+    <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>proxmox</text>
   </g>
 
 </svg>

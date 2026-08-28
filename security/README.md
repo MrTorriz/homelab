@@ -18,6 +18,8 @@ The defense-in-depth pieces of the homelab.
 
 <p align="center">
   <img src="../docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh verifying torrent traffic exits via Mullvad, not the ISP" width="780"/>
+  <br/>
+  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); not a live capture.</sub>
 </p>
 
 See [`../docs/security.md`](../docs/security.md) for the full threat model and layer-by-layer reasoning.
