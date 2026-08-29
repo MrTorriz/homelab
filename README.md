@@ -90,7 +90,7 @@
   <sub><b>killswitch check</b> — torrent egress vs host egress</sub>
 </p>
 
-<p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 2000×1400 (2× for high-DPI screens). The MOTD is a fixed snapshot of a real login on 2026-08-29 with hostname and addresses replaced; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
+<p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 2000 px wide at the same font size (2× for high-DPI screens), each cropped to its content. The MOTD is a fixed snapshot of a real login on 2026-08-29 with hostname and addresses replaced; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
 
 > **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with hostnames, domains and identifiers replaced. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
 >
