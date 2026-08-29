@@ -15,8 +15,8 @@ bold()   { printf '\033[1m%s\033[0m'  "$1"; }
 # ── fail2ban ──────────────────────────────────────────────────
 printf '%s ' "$(bold '$')"
 printf '%s\n' 'sudo fail2ban-client status sshd'
-sleep 0.5
-cat <<'EOF'
+sleep 0.9
+while IFS= read -r line; do printf '%s\n' "$line"; sleep 0.12; done <<'EOF'
 Status for the jail: sshd
 |- Filter
 |  |- Currently failed: 0
@@ -27,14 +27,14 @@ Status for the jail: sshd
    |- Total banned:     14
    `- Banned IP list:
 EOF
-sleep 0.6
+sleep 1.0
 
 printf '\n'
 
 # ── suricata fast.log ────────────────────────────────────────
 printf '%s ' "$(bold '$')"
 printf '%s\n' 'sudo tail -n 5 /var/log/suricata/fast.log'
-sleep 0.5
+sleep 0.9
 
 # Suricata fast.log canonical format:
 #   DATE  [**] [SID] MSG [**] [Classification: …] [Priority: N] {PROTO} SRC -> DST
@@ -45,16 +45,16 @@ suri() {
 }
 
 suri '04/25-15:32:11' '1:2027866:3'  'ET SCAN Possible Nmap User-Agent'    'Web App Attack'  '203.0.113.42:54221'  '192.0.2.10:443'
-sleep 0.15
+sleep 0.35
 suri '04/25-15:34:48' '1:2019401:5'  'ET POLICY Inbound MSSQL probe'       'Bad Traffic'     '203.0.113.78:42155'  '192.0.2.10:1433'
-sleep 0.15
+sleep 0.35
 suri '04/25-15:38:02' '1:2522180:1'  'ET CINS Poor Reputation IP'          'Misc Attack'     '203.0.113.114:51200' '192.0.2.10:22'
-sleep 0.15
+sleep 0.35
 suri '04/25-15:41:19' '1:2027866:3'  'ET SCAN Possible Nmap User-Agent'    'Web App Attack'  '203.0.113.201:60044' '192.0.2.10:443'
-sleep 0.15
+sleep 0.35
 suri '04/25-15:43:55' '1:2210050:2'  'SURICATA STREAM invalid ack'         'Protocol Decode' '203.0.113.7:443'     '192.0.2.40:55102'
 
 printf '\n'
-sleep 0.4
+sleep 0.8
 printf '%s detection layer live — UFW dropped 22k, Suricata alerted on 47, fail2ban banned 0\n' "$(green '✓')"
 printf '%s 24h window · all attempts blocked at the edge · zero shell access reached\n' "$(dim '  ')"
