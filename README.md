@@ -65,7 +65,7 @@
 
 <p align="center">
   <img src="docs/img/homepage.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
-  <sub><b>Homepage</b> — sanitized recording of the live dashboard (2026-08-29, 1536 px capture): hostname, location and ISP labels were replaced in the DOM before capture. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
+  <sub><b>Homepage</b> — sanitized recording of the live dashboard (2026-08-29, 1562 px capture): hostname and ISP labels were replaced in the DOM before capture; the town in the weather widget is real. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
 </p>
 
 <p align="center">

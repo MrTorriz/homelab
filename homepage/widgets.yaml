@@ -14,10 +14,9 @@
       hour12: false
 
 - openmeteo:
-    # No label on purpose — the live config carries the town name.
-    # Coordinates below are central Stockholm; replace with your own.
-    latitude: 59.33
-    longitude: 18.07
+    label: Norrtälje
+    latitude: 59.7580
+    longitude: 18.7050
     timezone: Europe/Stockholm
     units: metric
 
