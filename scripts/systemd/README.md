@@ -9,31 +9,35 @@ paths to your layout if you keep them elsewhere (e.g. `$HOME/scripts/`).
 | Unit | Purpose | Companion script |
 |---|---|---|
 | `docker-watcher.service` | Streams `docker events`; pushes ntfy on `die`/`oom` | `monitoring/docker-watcher.sh` |
-| `docker-events-ntfy.service` | Broader docker-event monitor (start/stop/health) | `monitoring/docker-events-monitor.py` |
 | `npm-monitor.service` | Tails NPM access logs for path scans, 401/403/404 spam, suspect UAs | `monitoring/npm-monitor.py` |
-| `suricata-ntfy.service` | Reads Suricata `eve.json` and pushes severity-1/2 alerts — **bare-metal era, not deployed in the current VM** | `monitoring/suricata-monitor.py` |
+| `file-watcher.service` | Watches critical host files and pushes ntfy on changes | `security/file-watcher.sh` |
 
-> Some companion scripts (e.g. `docker-events-monitor.py`, `suricata-monitor.py`)
-> are not yet vendored in this showcase; the units are included as templates.
+Only installable units with a published companion script are kept here. The
+live-only Docker event monitor and retired Suricata bridge are documented in
+the observability and security references, but are deliberately not presented
+as reusable units.
 
 ## Install
 
 ```bash
-# 1. Drop scripts into /opt/homelab/scripts/ (rsync from this repo)
-sudo rsync -a --delete scripts/ /opt/homelab/scripts/
+# 1. Review, then copy scripts into an isolated destination
+sudo install -d -o root -g root /opt/homelab/scripts
+sudo rsync -a --exclude '.env' scripts/ /opt/homelab/scripts/
 
 # 2. Make sure the runtime user exists (used by docker-watcher.service)
 sudo useradd --system --no-create-home --shell /usr/sbin/nologin homelab || true
 sudo usermod -aG docker homelab
 
-# 3. Drop the unit files into systemd
-sudo cp scripts/systemd/*.service /etc/systemd/system/
+# 3. Install only the units you reviewed
+sudo install -m 0644 scripts/systemd/docker-watcher.service /etc/systemd/system/
+sudo install -m 0644 scripts/systemd/npm-monitor.service /etc/systemd/system/
+sudo install -m 0644 scripts/systemd/file-watcher.service /etc/systemd/system/
 sudo systemctl daemon-reload
 
 # 4. Enable + start what you want
 sudo systemctl enable --now docker-watcher.service
 sudo systemctl enable --now npm-monitor.service
-# ...etc.
+sudo systemctl enable --now file-watcher.service
 
 # 5. Verify
 sudo systemctl status docker-watcher.service

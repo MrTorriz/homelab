@@ -133,7 +133,7 @@ So the alerting model is now event-driven, layered on top of the periodic health
 | `fail2ban-notify` | IP banned/unbanned in any jail | fail2ban action hook | ntfy (high priority on ban) |
 | `ssh-login-notify` | Successful SSH session opens | PAM `pam_exec` on `sshd` | ntfy (priority depends on origin: LAN/Docker/external) |
 | `sudo-notify` | Interactive sudo invocation | PAM `pam_exec` on `sudo`, filtered to TTYs only (skips cron/scripts) | ntfy (high) |
-| `docker-events-ntfy` | Container `start`/`stop`/`die`/`oom` | systemd unit tailing the Docker events stream | ntfy |
+| `docker-events-ntfy` | Container `start`/`stop`/`die`/`oom` | live-only systemd monitor; companion not published in this showcase | ntfy |
 | `npm-monitor` | Path scans, 401/403/404 spam, suspect user agents | systemd unit tailing NPM access logs | ntfy |
 | `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — bare-metal era, disabled in the current VM | ntfy |
 | `file-watcher` | Change in critical file paths | systemd unit | ntfy |
@@ -150,7 +150,7 @@ All of this runs through a single `ntfy_send` shim in `lib.sh`, so topic, priori
 | SSH | journald + fail2ban + real-time ntfy push | 30 days |
 | sudo | journald + real-time ntfy push (interactive only) | 30 days |
 | NPM access | NPM logs → fail2ban + npm-monitor → ntfy | 14 days |
-| Container lifecycle | docker-events-ntfy → ntfy | live |
+| Container lifecycle | live-only Docker event monitor → ntfy | live |
 | Container stdout | Docker logs (json-driver, capped) | 7 days |
 | Suricata (bare-metal era) | `fast.log` + `eve.json` under `/var/log/suricata`; severity 1–2 → ntfy | not deployed in the VM |
 | Healthcheck alerts | ntfy (push to phone) | – |

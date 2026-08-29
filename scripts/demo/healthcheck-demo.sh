@@ -23,7 +23,7 @@ printf '%s\n' "$(green 'OK (44/44 expected)')"
 
 printf '%s VPN reality-check (Mullvad) ..... ' "$(cyan '[2/4]')"
 sleep 0.5
-printf '%s\n' "$(green 'OK — connected via se-got-wg-006')"
+printf '%s\n' "$(green 'OK — connected via a Swedish relay')"
 
 printf '%s external hostnames ............. ' "$(cyan '[3/4]')"
 sleep 0.4

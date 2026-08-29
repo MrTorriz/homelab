@@ -94,7 +94,7 @@ The high-signal layer is the **event-driven security sources** — these are the
 | `sudo-notify` | interactive sudo invocation | PAM `pam_exec` on `sudo` | high |
 | `fail2ban-notify` | IP banned/unbanned in any jail | fail2ban action hook | high on ban |
 | `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — **bare-metal era, not deployed in the current VM** | high |
-| `docker-events-ntfy` | container start/stop/die/oom | systemd unit on Docker events stream | mixed |
+| `docker-events-ntfy` | container start/stop/die/oom | live-only systemd monitor; companion not published in this showcase | mixed |
 | `npm-monitor` | path scans, 401 spam, sqlmap signatures | systemd unit tailing NPM access logs | high |
 | `file-watcher` | mutation in critical paths (sshd config, sudoers, cron, authorized_keys) | systemd unit on inotify | urgent |
 

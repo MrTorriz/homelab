@@ -13,6 +13,8 @@ backups/
 *~
 .idea/
 .vscode/
+__pycache__/
+*.py[cod]
 
 # Local working journal — never pushed
 JOURNAL.md

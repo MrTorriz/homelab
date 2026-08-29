@@ -1,0 +1,58 @@
+/* Shared Glance polish for both themes. */
+
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate-border {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+.widget {
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.widget::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 0% 55%,
+    color-mix(in srgb, var(--color-primary) 55%, transparent) 68%,
+    var(--color-primary) 79%,
+    color-mix(in srgb, var(--color-primary) 55%, transparent) 90%,
+    transparent 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-primary) 65%, transparent));
+  transition: opacity 0.3s ease;
+}
+
+.widget:hover::before {
+  opacity: 1;
+  animation: rotate-border 3s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget {
+    transition: none;
+  }
+
+  .widget:hover::before {
+    animation: none;
+  }
+}

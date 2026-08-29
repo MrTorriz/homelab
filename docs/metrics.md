@@ -22,7 +22,7 @@ kept as history, not as current state.
 | Disk `/` | 29 % | `df -h /` | yes |
 | Disk `${STORAGE_DIR}` | 73 % | `df -h` | yes |
 | Disk `${MEDIA_DIR}` | **90 %** | `df -h` | yes |
-| VPN | Mullvad connected, lockdown mode on, relay `se-got-wg-006`; host exit and qBittorrent exit both verified as Mullvad | `mullvad status; curl https://am.i.mullvad.net/json` | yes |
+| VPN | Mullvad connected, lockdown mode on, relay identifier redacted; host exit and qBittorrent exit both verified as Mullvad | `mullvad status; curl https://am.i.mullvad.net/json` | yes |
 | IPv6 | 0 addresses on `eth0`, 0 IPv6 routes | `ip -6 addr; ip -6 route` | yes |
 | UFW | active · default deny incoming / allow outgoing / deny routed · 15 rules · no `ALLOW IN` from Anywhere | `ufw status verbose` | yes |
 | fail2ban | active · jail `sshd` · 0 banned / 0 failed | `fail2ban-client status sshd` | yes |
