@@ -18,20 +18,20 @@ WAN_IP="198.51.100.17"  # RFC5737 documentation prefix
 printf '%s\n' "$(dim '# qbittorrent egress (must be VPN exit)')"
 printf '%s ' "$(bold '$')"
 printf '%s\n' 'docker exec qbittorrent curl -s ifconfig.me'
-sleep 0.6
+sleep 1.0
 printf '%s   %s\n\n' "$(green "$VPN_IP")" "$(dim '← mullvad-exit')"
-sleep 0.5
+sleep 0.9
 
 printf '%s\n' "$(dim '# host egress (home WAN, ISP)')"
 printf '%s ' "$(bold '$')"
 printf '%s\n' 'curl -s ifconfig.me'
-sleep 0.6
+sleep 1.0
 printf '%s   %s\n\n' "$(yellow "$WAN_IP")" "$(dim '← ISP gateway')"
-sleep 0.5
+sleep 0.9
 
 printf '%s\n' "$(dim '# proof: addresses differ → kill-switch is enforced')"
 printf '%s %s != %s\n\n' "$(cyan 'diff:')" "$(green "$VPN_IP")" "$(yellow "$WAN_IP")"
-sleep 0.4
+sleep 0.8
 
 printf '%s qbittorrent is VPN-bound (kill-switch active)\n' "$(green '✓')"
 printf '%s torrent traffic cannot leak to the host network namespace\n' "$(dim '  ')"

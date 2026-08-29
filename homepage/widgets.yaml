@@ -3,7 +3,7 @@
 
 - greeting:
     text_size: 4xl
-    text: HOMELAB
+    text: Mserver
 
 - datetime:
     text_size: lg

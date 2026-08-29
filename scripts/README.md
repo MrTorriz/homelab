@@ -65,7 +65,7 @@ Each subdirectory holds standalone scripts that source `../lib.sh`. Read the hea
 <p align="center">
   <img src="../docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
   <br/>
-  <sub>Fixed snapshot of a real login on 2026-08-29 (<code>scripts/demo/server-motd-demo.sh</code>) — same layout, glyphs and palette as the live banner, hostname and addresses replaced.</sub>
+  <sub>Fixed snapshot of a real login on 2026-08-29 (<code>scripts/demo/server-motd-demo.sh</code>) — same layout, glyphs, palette and values as the live banner.</sub>
 </p>
 
 The full schedule that ties these together lives in [`crontab.example`](crontab.example).
