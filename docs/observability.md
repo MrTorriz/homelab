@@ -83,7 +83,7 @@ The metrics layer answers "what is happening?". The events layer answers "what *
 <p align="center">
   <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature, file-watcher" width="780"/>
   <br/>
-  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); the Suricata event shown here is not deployed in the current VM.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>, re-rendered 2026-08-29); the Suricata event shown here is not deployed in the current VM.</sub>
 </p>
 
 The high-signal layer is the **event-driven security sources** — these are the ones that wake you up in the middle of the night:

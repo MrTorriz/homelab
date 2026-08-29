@@ -53,7 +53,7 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` pr
 <p align="center">
   <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh comparing qBittorrent egress IP vs host egress IP" width="780"/>
   <br/>
-  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); not a live capture.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>, re-rendered 2026-08-29); not a live capture.</sub>
 </p>
 
 ### 2. Network
@@ -119,7 +119,7 @@ UFW stops what shouldn't get in. fail2ban stops what's hammering known login sur
 <p align="center">
   <img src="img/alerting.gif" alt="fail2ban status + IDS fast.log tail with example alerts" width="780"/>
   <br/>
-  <sub>Synthetic demo recorded 2026-04 (<code>scripts/demo/</code>); Suricata shown here is not deployed in the current VM.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>, re-rendered 2026-08-29); Suricata shown here is not deployed in the current VM.</sub>
 </p>
 
 ## Event-driven alerting
