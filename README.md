@@ -65,7 +65,7 @@
 
 <p align="center">
   <img src="docs/img/homepage.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
-  <sub><b>Homepage</b> — sanitized recording of the live dashboard (2026-08-29): hostname, location and ISP labels were replaced in the DOM before capture. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
+  <sub><b>Homepage</b> — sanitized recording of the live dashboard (2026-08-29, 1536 px capture): hostname, location and ISP labels were replaced in the DOM before capture. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
 </p>
 
 <p align="center">
@@ -75,24 +75,22 @@
 
 ### Tooling demos
 
-<table align="center">
-  <tr>
-    <td width="33%" align="center">
-      <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>ntfy</b> — event-driven push alerts</sub>
-    </td>
-    <td width="33%" align="center">
-      <img src="docs/img/server-motd.gif" alt="SSH login banner — hostname block letters, load/GPU/memory/disk bars, docker, VPN, last login, backup and certificate status" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>MOTD</b> — what an SSH login looks like</sub>
-    </td>
-    <td width="33%" align="center">
-      <img src="docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh verifying torrent traffic exits via Mullvad" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>killswitch check</b> — torrent egress vs host egress</sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/img/server-motd.gif" alt="SSH login banner — hostname block letters, load/GPU/memory/disk bars, docker, VPN, last login, backup and certificate status" width="900"/><br/>
+  <sub><b>MOTD</b> — what an SSH login looks like</sub>
+</p>
 
-<p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 1280×720. The MOTD is a fixed snapshot of a real login on 2026-08-29 with hostname and addresses replaced; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
+<p align="center">
+  <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature" width="900"/><br/>
+  <sub><b>ntfy</b> — event-driven push alerts</sub>
+</p>
+
+<p align="center">
+  <img src="docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh verifying torrent traffic exits via Mullvad" width="900"/><br/>
+  <sub><b>killswitch check</b> — torrent egress vs host egress</sub>
+</p>
+
+<p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 2000×1400 (2× for high-DPI screens). The MOTD is a fixed snapshot of a real login on 2026-08-29 with hostname and addresses replaced; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
 
 > **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with hostnames, domains and identifiers replaced. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
 >
