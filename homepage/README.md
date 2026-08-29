@@ -18,11 +18,12 @@
 
 ## Setup
 
-1. Copy these files to `${APPDATA_DIR}/homepage/`
-2. Replace `example.com` with your domain and `${LAN_IP}` with the host address
-3. For widget API keys (Sonarr/Radarr/Jellyfin…), set `HOMEPAGE_VAR_SONARR_KEY=...` etc. in Homepage's own `.env`
-4. The Scrutiny widget keys devices by NVMe serial / SATA WWN — fill in the `<nvme-serial>` / `<hdd-wwn-*>` placeholders from your `/api/summary`
-5. `docker restart homepage`
+1. Copy `services.yaml` and `widgets.yaml` to `${APPDATA_DIR}/homepage/`
+2. Copy the contents of `glance/` to `${APPDATA_DIR}/glance/`
+3. Replace `example.com` with your domain and `${LAN_IP}` with the host address
+4. For widget API keys (Sonarr/Radarr/Jellyfin…), set `HOMEPAGE_VAR_SONARR_KEY=...` etc. in Homepage's own `.env`
+5. The Scrutiny widget keys devices by NVMe serial / SATA WWN — fill in the `<nvme-serial>` / `<hdd-wwn-*>` placeholders from your `/api/summary`
+6. Restart the dashboard containers
 
 ## Layout
 

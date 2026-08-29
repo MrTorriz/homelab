@@ -3,8 +3,7 @@
 #
 # Warm amber/orange accent on near-black. Runs as a second Glance
 # instance (`glance-amber`, port 8095) next to the default one. Only
-# the `theme:` block differs from `glance.yml` — see that file for
-# the full pages: definition.
+# the `theme:` block differs; both variants include `pages.yml`.
 # ────────────────────────────────────────────────────────────
 
 server:
@@ -20,5 +19,5 @@ theme:
   negative-color: 355 67 65
   custom-css-file: /assets/custom.css
 
-# pages: see glance.yml — copy or $include the same block here.
-pages: []
+pages:
+  $include: pages.yml

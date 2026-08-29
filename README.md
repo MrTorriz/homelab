@@ -6,12 +6,9 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MrTorriz/homelab/lint.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/MrTorriz/homelab/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/MrTorriz/homelab?style=flat-square&logo=git&logoColor=white)](https://github.com/MrTorriz/homelab/commits/main)
 [![Containers](https://img.shields.io/badge/containers-44-blue?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
 [![Ingress](https://img.shields.io/badge/ingress-cloudflare_tunnel-brightgreen?style=flat-square&logo=cloudflare&logoColor=white)](docs/security.md)
 [![Proxmox VE](https://img.shields.io/badge/Proxmox_VE-8.4-E57000?style=flat-square&logo=proxmox&logoColor=white)](https://github.com/MrTorriz/proxmox-homelab)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04-E95420?style=flat-square&logo=ubuntu&logoColor=white)](docs/hardware.md)
-[![Docker](https://img.shields.io/badge/Docker-29.1-2496ED?style=flat-square&logo=docker&logoColor=white)](docker/README.md)
 
 </div>
 
@@ -39,25 +36,50 @@
 
 ---
 
+> **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with sensitive hostnames, domains and identifiers replaced, apart from the deliberate display-name exception below. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
+>
+> **Sanitization policy.** Real internal addresses are never published. Examples use documentation-only values, variables or descriptive labels, and the network topology is generalized. The host's display name *MSERVER* (dashboard logo and login banner) is the sole deliberate machine-name exception. Precise location, domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
+
+## Architecture
+
+Logical traffic flow (the tunnel is initiated outbound from the Docker host):
+
+```mermaid
+flowchart LR
+  Internet --> Edge[Cloudflare edge + access policy]
+  subgraph Host[Docker host VM]
+    Proxy[Reverse proxy] --> Apps[Applications]
+    Apps --> Observe[Metrics + events + health checks]
+    Apps --> Storage[Passthrough storage]
+    Apps --> VPN[Mullvad WireGuard egress]
+  end
+  LAN[LAN clients] --> Proxy
+  Proxy -. establishes outbound tunnel .-> Edge
+  Edge -->|authorized requests| Proxy
+```
+
+<details>
+<summary><b>Full architecture diagram</b> — trust boundaries, storage paths and observability</summary>
+
+<br/>
+
 <p align="center">
-  <img src="docs/img/architecture.svg" alt="Homelab architecture — Internet → edge perimeter → Docker host (detection, applications, observability) → storage, with the WireGuard tunnel as a parallel rail" width="900"/>
+  <img src="docs/img/architecture.svg" alt="Detailed homelab architecture with the edge perimeter, Docker host, applications, observability, storage and WireGuard egress" width="900"/>
 </p>
+
+</details>
 
 > **Runs virtualized.** This whole stack is the `docker-host` VM on a Proxmox host — the RTX 2060 and both HDDs are handed to it via passthrough. The hypervisor beneath this VM: **[proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)** (VM fleet, GPU/disk passthrough, fail-closed VPN gateway).
 
 ## What runs here
 
-| Category | Services | Details |
-|---|---|---|
-| Reverse proxy & access | Nginx Proxy Manager, cloudflared | [docker/README.md](docker/README.md#service-catalogue) |
-| Dashboards | Homepage, Glance ×2 | [homepage/](homepage/README.md) |
-| Media | Jellyfin (NVENC), Sonarr, Radarr, Lidarr, Bazarr, Prowlarr, FlareSolverr, qBittorrent (VPN-bound), Tdarr, Seerr, Audiobookshelf | [docker/README.md](docker/README.md#service-catalogue) |
-| Photos & files | Immich (server, ML, Postgres, Redis), Nextcloud (app, Postgres, Redis) | [docker/README.md](docker/README.md#immich-post-install-tuning) |
-| DNS & network | AdGuard Home, Speedtest Tracker | [docs/architecture.md](docs/architecture.md) |
-| Container management | Portainer, Dozzle, Watchtower, diun, docker-socket-proxy ×2 (ro + rw) | [docker/README.md](docker/README.md#conventions) |
-| Observability | Prometheus, Grafana, node-exporter, nvidia-gpu-exporter, cAdvisor, Glances, Scrutiny | [docs/observability.md](docs/observability.md) |
-| Notifications & reading | ntfy, Miniflux (+ Postgres) | [docs/observability.md](docs/observability.md#events-layer--18-ntfy-callers) |
-| Utilities | IT-Tools, draw.io | [docker/README.md](docker/README.md#service-catalogue) |
+- **Access and network:** Nginx Proxy Manager, cloudflared, AdGuard Home and Speedtest Tracker.
+- **Dashboards and observability:** Homepage, two Glance themes, Prometheus, Grafana, exporters, Glances and Scrutiny.
+- **Media:** Jellyfin with NVENC, the *arr stack, qBittorrent behind the VPN, Tdarr, Seerr and Audiobookshelf.
+- **Photos and files:** Immich and Nextcloud with their supporting databases and caches.
+- **Operations:** Portainer, Dozzle, Watchtower, diun, ntfy and split read-only/read-write Docker socket proxies.
+
+See the full [service catalogue](docker/README.md#service-catalogue) and [observability design](docs/observability.md).
 
 43 services in `docker/compose.yml`; the 44th container on the live host is a personal service with a private image and is not published.
 
@@ -73,7 +95,10 @@
   <sub><b>Grafana</b> — clean summary view rendered from the demo stack in <code>monitoring/demo/</code> with synthetic values; the host-power panels have been empty on the live system since 2026-07-04.</sub>
 </p>
 
-### Tooling demos
+<details>
+<summary><b>Tooling demos — MOTD, alerting and VPN verification</b></summary>
+
+<br/>
 
 <p align="center">
   <img src="docs/img/server-motd.gif" alt="SSH login banner — hostname block letters, load/GPU/memory/disk bars, docker, VPN, last login, backup and certificate status" width="900"/><br/>
@@ -92,9 +117,7 @@
 
 <p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 2000 px wide at the same font size (2× for high-DPI screens), each cropped to its content. The MOTD is a fixed snapshot of a real login on 2026-08-29; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
 
-> **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with sensitive hostnames, domains and identifiers replaced, apart from the deliberate display-name exception below. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
->
-> **Sanitization policy.** Real internal addresses are never published. Examples use documentation-only values, variables or descriptive labels, and the network topology is generalized. The host's display name *MSERVER* (dashboard logo and login banner) is the sole deliberate machine-name exception. Precise location, domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
+</details>
 
 ---
 

@@ -4,7 +4,6 @@ Small bash utilities that keep the homelab honest. All source `lib.sh` for share
 
 | Script | Purpose | Schedule |
 |---|---|---|
-| `deploy.sh` | Idempotent rsync from a checkout → live, with conditional service reloads | manual; kept as a rebuild tool — live config is edited in place since 2026-06 |
 | `healthcheck.sh` | Verify containers, VPN, external hostnames, disk usage | every 15 min |
 | `vpn-killswitch-check.sh` | Confirm torrent traffic is confined to the VPN interface | every 30 min |
 | `mullvad-rotate.sh` | Rotate Mullvad exit IP through a country list | every 6 hours |
@@ -15,30 +14,12 @@ Small bash utilities that keep the homelab honest. All source `lib.sh` for share
 Output below comes from the demo wrappers in `demo/` (no docker, ntfy or DNS
 is touched). Render an animated version with `vhs scripts/demo/<name>.tape`.
 
-`deploy.sh` only touches services whose source files actually changed — and only reloads the ones that need it:
-
-```text
-[deploy] git → live (idempotent rsync)
-[1/5] checking diffs ................. 3 files changed
-       ~ docker/compose.yml
-       ~ homepage/services.yaml
-       ~ scripts/healthcheck.sh
-[2/5] rsync → ~/docker/services/ ..... 1 file updated
-[3/5] rsync → ~/docker/appdata/ ...... 1 file updated
-[4/5] rsync → ~/scripts/ ............. 1 file updated
-[5/5] reload affected services ........ docker restart homepage
-
-[ntfy] homelab-alerts: deploy ok — 3 files, 1 service reloaded (4.2s)
-  → no changes for: ufw, fail2ban, sshd, systemd units
-exit 0
-```
-
 `healthcheck.sh` is the periodic safety net — if anything is unhealthy, ntfy fires:
 
 ```text
 [healthcheck] starting periodic check
 [1/4] containers running ............. OK (44/44 expected)
-[2/4] VPN reality-check (Mullvad) ..... OK — connected via se-got-wg-006
+[2/4] VPN reality-check (Mullvad) ..... OK — connected via a Swedish relay
 [3/4] external hostnames ............. OK (homepage, npm, jellyfin, immich, adguard, ntfy)
 [4/4] disk usage thresholds ........... OK (/ 29%, /mnt/media 90%, /mnt/storage 73%)
 

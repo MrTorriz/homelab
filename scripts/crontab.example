@@ -68,14 +68,8 @@
 #   docker-watcher.service       monitoring/docker-watcher.sh
 #       streams `docker events` and pushes ntfy on die/oom
 #
-#   docker-events-ntfy.service   monitoring/docker-events-monitor.py
-#       broader docker event monitor (start/stop/health transitions)
-#
 #   npm-monitor.service          monitoring/npm-monitor.py
 #       tails NPM access logs for path scans, 401/403/404 spam, suspect UAs
-#
-#   suricata-ntfy.service        monitoring/suricata-monitor.py
-#       reads Suricata eve.json and pushes severity-1/2 alerts
 #
 #   file-watcher.service         security/file-watcher.sh
 #       inotify on authorized_keys, sudoers, cron, systemd units →
