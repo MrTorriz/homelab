@@ -65,7 +65,7 @@
 
 <p align="center">
   <img src="docs/img/homepage.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
-  <sub><b>Homepage</b> — recording of the live dashboard (2026-08-29): only the ISP label and one private card were changed in the DOM before capture. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
+  <sub><b>Homepage</b> — recording of the live dashboard (2026-08-29). DOM-only sanitization: Router description → <i>ISP gateway</i>, GitHub description → <i>Public repos</i>, and one private Links card removed; the MSERVER header and Norrtälje weather were deliberately retained. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
 </p>
 
 <p align="center">
@@ -92,7 +92,7 @@
 
 <p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 2000 px wide at the same font size (2× for high-DPI screens), each cropped to its content. The MOTD is a fixed snapshot of a real login on 2026-08-29; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
 
-> **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with hostnames, domains and identifiers replaced. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
+> **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with sensitive hostnames, domains and identifiers replaced, apart from the deliberate display-name exception below. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
 >
 > **Sanitization policy.** RFC1918 addressing (`192.168.1.0/24`, `10.10.10.0/24`), the network topology and the host's display name *MSERVER* (dashboard logo, login banner) are published deliberately — they are unreachable from outside and carry no identity. The VM is called `docker-host` in the text. Domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
 

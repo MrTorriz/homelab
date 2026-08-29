@@ -5,7 +5,7 @@
 <p align="center">
   <img src="../docs/img/homepage.png" alt="Homepage dashboard — header with system gauges, then Network, System, Media and Links groups; *arr stack below" width="780"/>
   <br/>
-  <sub>Homepage — sanitized recreation from live-verified output (2026-08-28): hostname, location and ISP labels were replaced in the DOM before capture.</sub>
+  <sub>Homepage — live dashboard capture (2026-08-29). DOM-only sanitization: Router description → <i>ISP gateway</i>, GitHub description → <i>Public repos</i>, and one private Links card removed; the MSERVER header and Norrtälje weather were deliberately retained.</sub>
 </p>
 
 ## Files
