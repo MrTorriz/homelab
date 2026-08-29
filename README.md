@@ -64,8 +64,8 @@
 ## Showcase
 
 <p align="center">
-  <img src="docs/img/homepage.png" alt="Homepage dashboard — header with system gauges, then Network, System, Media and Links groups; *arr stack below" width="900"/><br/>
-  <sub><b>Homepage</b> — sanitized recreation from live-verified output (2026-08-28): hostname, location and ISP labels were replaced in the DOM before capture.</sub>
+  <img src="docs/img/homepage.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
+  <sub><b>Homepage</b> — sanitized recording of the live dashboard (2026-08-29): hostname, location and ISP labels were replaced in the DOM before capture. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
 </p>
 
 <p align="center">
@@ -82,8 +82,8 @@
       <sub><b>ntfy</b> — event-driven push alerts</sub>
     </td>
     <td width="33%" align="center">
-      <img src="docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="100%" style="width:100%; height:auto"/><br/>
-      <sub><b>MOTD</b> — SSH login banner</sub>
+      <img src="docs/img/server-motd.gif" alt="SSH login banner — hostname block letters, load/GPU/memory/disk bars, docker, VPN, last login, backup and certificate status" width="100%" style="width:100%; height:auto"/><br/>
+      <sub><b>MOTD</b> — what an SSH login looks like</sub>
     </td>
     <td width="33%" align="center">
       <img src="docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh verifying torrent traffic exits via Mullvad" width="100%" style="width:100%; height:auto"/><br/>
@@ -92,7 +92,7 @@
   </tr>
 </table>
 
-<p align="center"><sub>Synthetic demos recorded 2026-04 (<code>scripts/demo/</code>); the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
+<p align="center"><sub>Terminal demos rendered 2026-08-29 with <code>vhs</code> from <code>scripts/demo/</code>, all 1280×720. The MOTD is a fixed snapshot of a real login on 2026-08-29 with hostname and addresses replaced; ntfy and killswitch use synthetic values, and the Suricata event in the alerting demo is not deployed in the current VM.</sub></p>
 
 > **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with hostnames, domains and identifiers replaced. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
 >
