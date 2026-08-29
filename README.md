@@ -42,32 +42,12 @@
 
 ## Architecture
 
-Logical traffic flow (the tunnel is initiated outbound from the Docker host):
-
-```mermaid
-flowchart LR
-  Internet --> Edge[Cloudflare edge + access policy]
-  subgraph Host[Docker host VM]
-    Proxy[Reverse proxy] --> Apps[Applications]
-    Apps --> Observe[Metrics + events + health checks]
-    Apps --> Storage[Passthrough storage]
-    Apps --> VPN[Mullvad WireGuard egress]
-  end
-  LAN[LAN clients] --> Proxy
-  Proxy -. establishes outbound tunnel .-> Edge
-  Edge -->|authorized requests| Proxy
-```
-
-<details>
-<summary><b>Full architecture diagram</b> — trust boundaries, storage paths and observability</summary>
-
-<br/>
-
 <p align="center">
-  <img src="docs/img/architecture.svg" alt="Detailed homelab architecture with the edge perimeter, Docker host, applications, observability, storage and WireGuard egress" width="900"/>
+  <a href="docs/img/architecture.svg">
+    <img src="docs/img/architecture.svg" alt="Detailed homelab architecture with the edge perimeter, Docker host, applications, observability, storage and WireGuard egress" width="900"/>
+  </a><br/>
+  <sub>Full topology with trust boundaries, storage paths and observability. Click to open at full size.</sub>
 </p>
-
-</details>
 
 > **Runs virtualized.** This whole stack is the `docker-host` VM on a Proxmox host — the RTX 2060 and both HDDs are handed to it via passthrough. The hypervisor beneath this VM: **[proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)** (VM fleet, GPU/disk passthrough, fail-closed VPN gateway).
 
