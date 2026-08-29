@@ -34,7 +34,7 @@ private_markers=(
   "$(printf '%s.%s.%s.' 192 168 1)"
   "$(printf '%s.%s.%s.' 10 10 10)"
   "$(printf '%s%s' 'Job' ' Search')"
-  "$(printf '%s%s' 'Telenor' ' gateway')"
+  "$(printf '\x54\x65\x6c\x65\x6e\x6f\x72')"
   "$(printf '%s%s' 'MrTorriz' ' repos')"
   "$(printf '%s%s' 'Norr' 'tälje')"
 )
@@ -44,6 +44,13 @@ for marker in "${private_markers[@]}"; do
     fail=1
   fi
 done
+
+# Provider relay identifiers reveal a precise exit location. Keep only the
+# country-level description in public text.
+if hits=$(git grep -n -E '[a-z]{2}-[a-z]{3}-wg-[0-9]{3}' -- ':!scripts/check-facts.sh'); then
+  echo "PRIVATE MARKER 'exact VPN relay':"; echo "$hits" | sed 's/^/        /'
+  fail=1
+fi
 
 (( fail == 0 )) && echo "check-facts: OK (containers=$containers snapshot=$snapshot)"
 exit "$fail"

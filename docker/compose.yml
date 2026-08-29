@@ -59,6 +59,7 @@ services:
       - "${LAN_IP}:8092:8080"
     volumes:
       - ${APPDATA_DIR}/glance/glance.yml:/app/config/glance.yml
+      - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
       - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
     networks: [default]
 

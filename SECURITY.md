@@ -1,8 +1,9 @@
 # Security policy
 
 **Scope.** This repository contains documentation and sanitized configuration
-for a personal homelab. There are no releases, no packages and nothing here is
-deployed from this repo — the live system runs from a private counterpart.
+for a personal homelab. Tagged snapshots are documentation releases, not
+deployable packages, and nothing here is deployed from this repo — the live
+system runs from a private counterpart.
 
 **Sanitization policy.** Real internal addresses are never published. Examples use documentation-only values, variables or descriptive labels, and the network topology is generalized. The host's display name *MSERVER* (dashboard logo and login banner) is the sole deliberate machine-name exception. Precise location, domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
 

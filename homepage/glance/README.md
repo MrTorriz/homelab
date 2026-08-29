@@ -7,8 +7,10 @@ its **Links** group.
 
 | File | Container | Port (LAN) | Notes |
 |---|---|---|---|
-| `glance.yml` | `glance` | `8092` | Default theme, full `pages:` definition |
-| `glance.amber.yml` | `glance-amber` | `8095` | Amber theme, same pages |
+| `glance.yml` | `glance` | `8092` | Default theme, includes `pages.yml` |
+| `glance.amber.yml` | `glance-amber` | `8095` | Amber theme, includes `pages.yml` |
+| `pages.yml` | both | — | Sanitized shared page list |
+| `custom.css` | both | — | Theme-aware widget border animation |
 
 Earlier the dashboard had a **FEED** tab that iframed one of three
 themed Glance instances (deep space / tokyo / amber) and swapped the
@@ -18,8 +20,7 @@ amber variant stayed as an alternative start page.
 
 ## Sharing one `pages:` definition
 
-In the live setup, the amber variant only carries a `theme:` block and
-pulls the `pages:` definition from a sibling `pages.yml` using Glance's
+Both variants pull the page list from a sibling `pages.yml` using Glance's
 `$include` directive:
 
 ```yaml
@@ -27,9 +28,8 @@ pages:
   $include: pages.yml
 ```
 
-The variant in this repo ships with `pages: []` and a comment so the
-file is valid out of the box — copy the `pages:` block from
-`glance.yml` into it, or split it into a shared file and `$include` it.
+The variant in this repo includes the published, sanitized `pages.yml`,
+so the Compose example has every mounted source file it needs.
 
 ## Custom CSS
 
