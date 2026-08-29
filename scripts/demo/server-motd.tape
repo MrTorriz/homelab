@@ -2,7 +2,7 @@
 #
 # Renders the SSH login banner exactly as the live host shows it (layout, glyphs,
 # palette) from the fixed snapshot in scripts/demo/server-motd-demo.sh — the
-# `ssh` typed in the GIF is a shell function that prints the snapshot; nothing connects.
+# `server` alias typed in the GIF is a shell function that prints the snapshot; nothing connects.
 #
 # Build with:  vhs scripts/demo/server-motd.tape
 
@@ -15,18 +15,18 @@ Set Width 2000
 Set Height 1400
 Set Padding 48
 Set Shell "bash"
-Set TypingSpeed 35ms
+Set TypingSpeed 55ms
 Set PlaybackSpeed 1.0
 
 Hide
-Type "ssh() { PS1=''; bash scripts/demo/server-motd-demo.sh; }; PS1='\[\e[38;5;244m\]laptop\[\e[0m\] $ '"
+Type "server() { PS1=''; bash scripts/demo/server-motd-demo.sh; }; PS1='\[\e[38;5;204m\]~\[\e[0m\] \[\e[38;5;71m\]❯\[\e[0m\] '"
 Enter
 Type "clear"
 Enter
 Show
 
 Sleep 700ms
-Type "ssh operator@docker-host"
+Type "server"
 Sleep 400ms
 Enter
-Sleep 6s
+Sleep 9s

@@ -15,7 +15,7 @@ Set Width 2000
 Set Height 760
 Set Padding 48
 Set Shell "bash"
-Set TypingSpeed 35ms
+Set TypingSpeed 55ms
 Set PlaybackSpeed 1.0
 
 Hide
@@ -29,4 +29,4 @@ Sleep 600ms
 Type "bash scripts/demo/vpn-killswitch-demo.sh"
 Sleep 400ms
 Enter
-Sleep 6s
+Sleep 9s
