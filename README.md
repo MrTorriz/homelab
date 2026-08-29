@@ -64,7 +64,7 @@
 ## Showcase
 
 <p align="center">
-  <img src="docs/img/homepage.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
+  <img src="docs/img/homepage-dashboard.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
   <sub><b>Homepage</b> — recording of the live dashboard (2026-08-29). DOM-only sanitization: Router description → <i>ISP gateway</i>, GitHub description → <i>Public repos</i>, and one private Links card removed; the MSERVER header and Norrtälje weather were deliberately retained. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
 </p>
 
