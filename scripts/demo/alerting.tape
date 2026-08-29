@@ -14,7 +14,7 @@ Set Width 2000
 Set Height 1200
 Set Padding 48
 Set Shell "bash"
-Set TypingSpeed 35ms
+Set TypingSpeed 55ms
 Set PlaybackSpeed 1.0
 
 Hide
@@ -28,4 +28,4 @@ Sleep 600ms
 Type "bash scripts/demo/alerting-demo.sh"
 Sleep 400ms
 Enter
-Sleep 7s
+Sleep 9s
