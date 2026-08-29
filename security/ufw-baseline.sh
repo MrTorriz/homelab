@@ -7,17 +7,20 @@
 # Run with sudo.
 #
 # Configurable via env:
-#   LAN_CIDR    LAN subnet in CIDR  (default: 192.0.2.0/24)
+#   LAN_CIDR    LAN subnet in CIDR  (required)
 #   LAN_IFACE   Physical NIC name   (default: eth0)
-#   ADMIN_IPS   Space-separated list of trusted admin hosts
+#   ADMIN_IPS   Space-separated list of trusted admin hosts (required)
+#   DOCKER_CIDR Docker bridge CIDR (required)
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
-LAN_CIDR="${LAN_CIDR:-192.0.2.0/24}"
+: "${LAN_CIDR:?Set LAN_CIDR to the deployment LAN subnet}"
+: "${ADMIN_IPS:?Set ADMIN_IPS to one or more trusted admin hosts}"
+: "${DOCKER_CIDR:?Set DOCKER_CIDR to the deployment Docker bridge subnet}"
 LAN_IFACE="${LAN_IFACE:-eth0}"
 # ADMIN_IPS arrives as one space-separated string; split it into an array so
 # each host becomes its own ufw rule.
-read -r -a ADMIN_HOSTS <<< "${ADMIN_IPS:-192.0.2.40 192.0.2.43}"
+read -r -a ADMIN_HOSTS <<< "$ADMIN_IPS"
 if (( ${#ADMIN_HOSTS[@]} == 0 )); then
   echo "ADMIN_IPS is empty — refusing to apply a policy with no SSH admin rule" >&2
   exit 1
@@ -66,12 +69,11 @@ ufw allow in on "$LAN_IFACE" from "$LAN_CIDR" to any port 443 proto tcp comment 
 ufw allow in on "$LAN_IFACE" from "$LAN_CIDR" to any port 8096 proto tcp comment "Jellyfin (LAN)"
 
 # ─── Docker bridge networks ──────────────────────────────────
-# 172.16.0.0/12 covers the default bridge (172.17/16) and any
-# user-defined Compose networks (172.18/16, 172.19/16, …).
+# Set DOCKER_CIDR to the actual bridge range used by the deployment.
 # Without this rule UFW drops container-to-host traffic, which
 # breaks healthchecks and inter-container DNS that traverses
 # the host.
-ufw allow from 172.16.0.0/12 comment "Docker bridge networks"
+ufw allow from "$DOCKER_CIDR" comment "Docker bridge networks"
 
 # ─── Logging ─────────────────────────────────────────────────
 # Low verbosity: drops are logged with rate-limit, allows are not.

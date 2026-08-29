@@ -241,7 +241,7 @@
         icon: proxmox.png
         href: https://proxmox.example.com
         description: Hypervisor web UI
-        siteMonitor: https://192.0.2.4:8006
+        siteMonitor: https://proxmox.example.com
     - GitHub:
         icon: github.png
         href: https://github.com
@@ -249,9 +249,9 @@
         siteMonitor: https://github.com
     - Router:
         icon: mdi-router-wireless
-        href: http://192.0.2.1
+        href: https://router.example.com
         description: ISP gateway
-        siteMonitor: https://192.0.2.1
+        siteMonitor: https://router.example.com
     - Glance:
         icon: mdi-newspaper-variant-multiple
         href: https://glance.example.com

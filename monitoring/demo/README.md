@@ -49,7 +49,8 @@ dashboard, fabricated metrics, English locale forced via
 
 ## Reproducing the screenshot
 
-The screenshot in the top-level README is taken at viewport
-1920 × 1200, full page, with the time range set to "Last 5 minutes".
+The screenshot in the top-level README is a clean 1280 × 720 summary view with the
+time range set to "Last 5 minutes". The capacity panels continue below it in the live
+dashboard and are documented in `docs/observability.md`.
 Anonymous Admin is enabled so Playwright can land on the dashboard
 URL directly without any login interaction.

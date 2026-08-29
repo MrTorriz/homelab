@@ -33,26 +33,22 @@ printf '\n'
 
 # ── suricata fast.log ────────────────────────────────────────
 printf '%s ' "$(bold '$')"
-printf '%s\n' 'sudo tail -n 5 /var/log/suricata/fast.log'
+printf '%s\n' 'sudo tail -n 3 /var/log/suricata/fast.log'
 sleep 0.9
 
-# Suricata fast.log canonical format:
-#   DATE  [**] [SID] MSG [**] [Classification: …] [Priority: N] {PROTO} SRC -> DST
+# Compact public rendering of the same fast.log fields. Keeping the message,
+# protocol and endpoints on one line makes the GIF readable when GitHub scales it.
 suri() {
-  local date=$1 sid=$2 msg=$3 cls=$4 src=$5 dst=$6
-  printf '%s  [**] [%s] %s [**] [%s] {TCP} %s -> %s\n' \
-    "$(dim "$date")" "$(yellow "$sid")" "$msg" "$cls" "$(red "$src")" "$dst"
+  local date=$1 msg=$2 src=$3 dst=$4
+  printf '%s  %-28s TCP  %s -> %s\n' \
+    "$(dim "$date")" "$(yellow "$msg")" "$(red "$src")" "$dst"
 }
 
-suri '04/25-15:32:11' '1:2027866:3'  'ET SCAN Possible Nmap User-Agent'    'Web App Attack'  '203.0.113.42:54221'  '192.0.2.10:443'
+suri '04/25-15:32:11' 'Nmap user-agent detected' 'test-source-a' 'web:443'
 sleep 0.35
-suri '04/25-15:34:48' '1:2019401:5'  'ET POLICY Inbound MSSQL probe'       'Bad Traffic'     '203.0.113.78:42155'  '192.0.2.10:1433'
+suri '04/25-15:38:02' 'Poor-reputation source' 'test-source-b' 'ssh:22'
 sleep 0.35
-suri '04/25-15:38:02' '1:2522180:1'  'ET CINS Poor Reputation IP'          'Misc Attack'     '203.0.113.114:51200' '192.0.2.10:22'
-sleep 0.35
-suri '04/25-15:41:19' '1:2027866:3'  'ET SCAN Possible Nmap User-Agent'    'Web App Attack'  '203.0.113.201:60044' '192.0.2.10:443'
-sleep 0.35
-suri '04/25-15:43:55' '1:2210050:2'  'SURICATA STREAM invalid ack'         'Protocol Decode' '203.0.113.7:443'     '192.0.2.40:55102'
+suri '04/25-15:43:55' 'Invalid TCP acknowledgement' 'test-source-c' 'client'
 
 printf '\n'
 sleep 0.8

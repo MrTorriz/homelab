@@ -162,7 +162,7 @@ If this happens more than once a quarter, the real fix is either bigger disks or
 ### Detect
 
 ```bash
-dig @192.0.2.1 example.com +short   # from a LAN client
+dig @"$DNS_SERVER" example.com +short   # from a LAN client
 docker logs --tail 50 adguardhome
 ```
 

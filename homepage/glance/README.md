@@ -40,5 +40,5 @@ variables, so colour decisions stay in the YAML.
 
 ## Screenshot
 
-The Glance card is visible in `../../docs/img/homepage.png` (Links
+The Glance card is visible in `../../docs/img/homepage-public.png` (Links
 group). There is no separate Glance capture.

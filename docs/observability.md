@@ -19,7 +19,7 @@ The metrics layer exists because a periodic healthcheck only catches failures �
 ## Metrics layer — Prometheus + Grafana
 
 <p align="center">
-  <img src="img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard, twelve panels covering power, energy, cost, CPU, memory, disk and network" width="900"/>
+  <img src="img/grafana-overview.png" alt="Grafana — top summary of the Homelab Overview dashboard with power, energy, cost and uptime" width="900"/>
 </p>
 
 > Captured from an ephemeral demo stack with synthetic metrics — see

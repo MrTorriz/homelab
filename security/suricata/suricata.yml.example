@@ -16,9 +16,9 @@ suricata-version: "7.0"
 
 vars:
   address-groups:
-    # Cover RFC1918 + Docker bridges. Tighten to your LAN if you
-    # want fewer false positives from container chatter.
-    HOME_NET: "[192.168.0.0/16,10.0.0.0/8,172.16.0.0/12]"
+    # Documentation-only range. Replace with the deployment's LAN and
+    # container ranges before enabling the ruleset.
+    HOME_NET: "[192.0.2.0/24]"
     EXTERNAL_NET: "!$HOME_NET"
 
     HTTP_SERVERS: "$HOME_NET"

@@ -64,13 +64,13 @@
 ## Showcase
 
 <p align="center">
-  <img src="docs/img/homepage-dashboard.gif" alt="Homepage dashboard scrolling from the header gauges through Network, System, Media and Links down to the *arr stack" width="900"/><br/>
-  <sub><b>Homepage</b> — recording of the live dashboard (2026-08-29). DOM-only sanitization: Router description → <i>ISP gateway</i>, GitHub description → <i>Public repos</i>, and one private Links card removed; the MSERVER header and Sweden weather were deliberately retained. Still image: <a href="docs/img/homepage.png">homepage.png</a>.</sub>
+  <img src="docs/img/homepage-public.gif" alt="Complete Homepage dashboard in one fixed view, with animated borders around widgets and service cards" width="900"/><br/>
+  <sub><b>Homepage</b> — sanitized, non-scrolling full-page recording of the live dashboard (2026-08-29). Browser chrome, internal addresses, the precise weather location and one private Links card were removed or generalized before capture; the MSERVER display name is deliberately retained. Still image: <a href="docs/img/homepage-public.png">homepage-public.png</a>.</sub>
 </p>
 
 <p align="center">
-  <img src="docs/img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard, twelve panels covering power, energy, cost, capacity" width="900"/><br/>
-  <sub><b>Grafana</b> — rendered from the demo stack in <code>monitoring/demo/</code> with synthetic values; the host-power panels have been empty on the live system since 2026-07-04.</sub>
+  <img src="docs/img/grafana-overview.png" alt="Grafana — top of the Homelab Overview dashboard with four power gauges, a power timeline, energy, cost and uptime" width="900"/><br/>
+  <sub><b>Grafana</b> — clean summary view rendered from the demo stack in <code>monitoring/demo/</code> with synthetic values; the host-power panels have been empty on the live system since 2026-07-04.</sub>
 </p>
 
 ### Tooling demos
@@ -81,8 +81,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature" width="900"/><br/>
-  <sub><b>ntfy</b> — event-driven push alerts</sub>
+  <img src="docs/img/alerting.gif" alt="Security detections — fail2ban jail status followed by a Suricata alert" width="900"/><br/>
+  <sub><b>Detection layer</b> — fail2ban enforcement and a sanitized Suricata alert</sub>
 </p>
 
 <p align="center">
@@ -94,7 +94,7 @@
 
 > **What this is.** A sanitized public reference of a real, running homelab. The live configuration is the source of truth and lives in a private repository; this repo mirrors it with sensitive hostnames, domains and identifiers replaced, apart from the deliberate display-name exception below. It is not drop-in reproducible — paths, secrets and hardware assumptions belong to one specific box.
 >
-> **Sanitization policy.** RFC1918 addressing (`192.0.2.0/24`, `198.51.100.0/24`), the network topology and the host's display name *MSERVER* (dashboard logo, login banner) are published deliberately — they are unreachable from outside and carry no identity. The VM is called `docker-host` in the text. Domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
+> **Sanitization policy.** Real internal addresses are never published. Examples use documentation-only values, variables or descriptive labels, and the network topology is generalized. The host's display name *MSERVER* (dashboard logo and login banner) is the sole deliberate machine-name exception. Precise location, domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
 
 ---
 

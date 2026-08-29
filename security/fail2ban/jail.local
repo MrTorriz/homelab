@@ -7,8 +7,8 @@ maxretry = 3
 # modern Ubuntu, file-based on older hosts). Portable across forks.
 backend  = %(sshd_backend)s
 
-# Don't lock yourself out. Adjust the second CIDR to your LAN.
-ignoreip = 127.0.0.1/8 192.168.0.0/16
+# Don't lock yourself out. Add the real administration subnet in a local override.
+ignoreip = 127.0.0.1/8
 
 [sshd]
 enabled = true

@@ -3,9 +3,9 @@
 [Homepage](https://gethomepage.dev) is the entry-point dashboard. Service tiles are auto-populated from the running Docker containers (via the read-only `docker-socket-proxy` on the `socket-ro` network).
 
 <p align="center">
-  <img src="../docs/img/homepage.png" alt="Homepage dashboard — header with system gauges, then Network, System, Media and Links groups; *arr stack below" width="780"/>
+  <img src="../docs/img/homepage-public.png" alt="Homepage dashboard — header with system gauges, then Network, System, Media and Links groups; *arr stack below" width="780"/>
   <br/>
-  <sub>Homepage — live dashboard capture (2026-08-29). DOM-only sanitization: Router description → <i>ISP gateway</i>, GitHub description → <i>Public repos</i>, and one private Links card removed; the MSERVER header and Sweden weather were deliberately retained.</sub>
+  <sub>Homepage — sanitized live capture (2026-08-29). Browser chrome, internal addresses, the precise weather location and one private Links card were removed or generalized; the MSERVER display name was deliberately retained.</sub>
 </p>
 
 ## Files
