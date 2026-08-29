@@ -12,7 +12,7 @@ Set Theme { "name": "Sweet-Ambar-Blue", "background": "#0d0d0d", "foreground": "
 Set FontFamily "Cascadia Mono NF"
 Set FontSize 30
 Set Width 2000
-Set Height 1400
+Set Height 760
 Set Padding 48
 Set Shell "bash"
 Set TypingSpeed 35ms
