@@ -29,5 +29,21 @@ for s in "${stale[@]}"; do
   fi
 done
 
+# Private deployment markers that must never return to tracked public text.
+private_markers=(
+  "$(printf '%s.%s.%s.' 192 168 1)"
+  "$(printf '%s.%s.%s.' 10 10 10)"
+  "$(printf '%s%s' 'Job' ' Search')"
+  "$(printf '%s%s' 'Telenor' ' gateway')"
+  "$(printf '%s%s' 'MrTorriz' ' repos')"
+  "$(printf '%s%s' 'Norr' 'tälje')"
+)
+for marker in "${private_markers[@]}"; do
+  if hits=$(git grep -n -F -- "$marker" -- ':!scripts/check-facts.sh'); then
+    echo "PRIVATE MARKER '$marker':"; echo "$hits" | sed 's/^/        /'
+    fail=1
+  fi
+done
+
 (( fail == 0 )) && echo "check-facts: OK (containers=$containers snapshot=$snapshot)"
 exit "$fail"

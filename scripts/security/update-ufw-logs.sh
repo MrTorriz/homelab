@@ -9,12 +9,10 @@ LOG_FILE="${LOG_FILE:-${LOG_DIR}/ufw_blocked.log}"
 
 mkdir -p "$LOG_DIR"
 
-# Known LAN devices — extend to taste; values are display labels
+# Optional known LAN devices supplied locally; no real addresses live in this repo.
 declare -A HOSTS
-HOSTS["192.0.2.20"]="AppleTV"
-HOSTS["192.0.2.21"]="LivingRoomTV"
-HOSTS["${ADMIN_IP_1:-192.0.2.40}"]="AdminLaptop-WiFi"
-HOSTS["${ADMIN_IP_2:-192.0.2.43}"]="AdminLaptop-Eth"
+[[ -n "${ADMIN_IP_1:-}" ]] && HOSTS["$ADMIN_IP_1"]="AdminLaptop-WiFi"
+[[ -n "${ADMIN_IP_2:-}" ]] && HOSTS["$ADMIN_IP_2"]="AdminLaptop-Eth"
 
 # Known ports
 declare -A PORTS

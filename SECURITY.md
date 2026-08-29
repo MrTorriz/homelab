@@ -4,7 +4,7 @@
 for a personal homelab. There are no releases, no packages and nothing here is
 deployed from this repo — the live system runs from a private counterpart.
 
-**Sanitization policy.** RFC1918 addressing (`192.0.2.0/24`, `198.51.100.0/24`), the network topology and the host's display name *MSERVER* (dashboard logo, login banner) are published deliberately — they are unreachable from outside and carry no identity. Domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
+**Sanitization policy.** Real internal addresses are never published. Examples use documentation-only values, variables or descriptive labels, and the network topology is generalized. The host's display name *MSERVER* (dashboard logo and login banner) is the sole deliberate machine-name exception. Precise location, domains, account names, MAC addresses, disk serials/WWNs, device identifiers, e-mail addresses and the ISP's name are replaced or removed.
 
 **What to report.** Two things are worth a report:
 

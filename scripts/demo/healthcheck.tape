@@ -18,7 +18,7 @@ Set TypingSpeed 35ms
 Set PlaybackSpeed 1.0
 
 Hide
-Type "export NTFY_TOPIC=homelab-alerts NTFY_DRY_RUN=1 HOMELAB_IP=192.0.2.10 HOSTNAME=homelab"
+Type "export NTFY_TOPIC=homelab-alerts NTFY_DRY_RUN=1 HOMELAB_IP=host.example.test HOSTNAME=homelab"
 Enter
 Type "clear"
 Enter

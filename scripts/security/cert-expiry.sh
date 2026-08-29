@@ -15,7 +15,7 @@ mkdir -p "$LOG_DIR"
 ENV_FILE="${ENV_FILE:-$(dirname "$0")/../.env}"
 # shellcheck disable=SC1090
 [[ -f "$ENV_FILE" ]] && . "$ENV_FILE"
-NPM_URL="${NPM_URL:-http://${LAN_IP:-192.0.2.10}:81}"
+NPM_URL="${NPM_URL:-http://${LAN_IP:?Set LAN_IP or NPM_URL}:81}"
 NPM_USER="${NPM_USER:-admin@example.com}"
 NPM_SECRET="${NPM_SECRET:-}"
 
