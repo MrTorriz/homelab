@@ -8,9 +8,6 @@ UPTIME_SHORT=$(uptime -p | sed \
     's/up //;s/, [0-9]* minutes\?.*//;s/ days\?/d/;s/ hours\?/h/;s/,//')
 IP="${HOMELAB_IP:-$(hostname -I | awk '{print $1}')}"
 OS=$(lsb_release -d 2>/dev/null | cut -f2 | awk '{print tolower($0)}')
-TEMP_C="??"
-[ -f /sys/class/thermal/thermal_zone0/temp ] && \
-    TEMP_C=$(( $(cat /sys/class/thermal/thermal_zone0/temp) / 1000 ))
 
 MEM_USED=$(free -m | awk 'NR==2{print $3}')
 MEM_TOTAL=$(free -m | awk 'NR==2{print $2}')
@@ -38,6 +35,9 @@ mountpoint -q "$MEDIA_DIR" && \
     MED_PERC=$(LC_ALL=C df -h "$MEDIA_DIR" | awk 'NR==2{print $5}' | tr -d '%')
 
 LOAD=$(cut -d ' ' -f1,2,3 /proc/loadavg)
+CORES=$(nproc)
+LOAD1=$(cut -d ' ' -f1 /proc/loadavg)
+CPU_PERC=$(echo "$LOAD1 * 100 / $CORES" | bc 2>/dev/null); CPU_PERC=${CPU_PERC:-0}
 
 GPU_TEMP="??"; GPU_UTIL="0"; GPU_MG="??"; GPU_TG="??"
 if command -v nvidia-smi &>/dev/null; then
@@ -81,6 +81,21 @@ LAST_RAW=$(LC_TIME=C last -F "$LAST_USER" 2>/dev/null \
 LAST_IP="${HOMELAB_LAST_IP:-$(echo "$LAST_RAW" | awk '{print $3}')}"
 LAST_DATE=$(echo "$LAST_RAW" | awk '{printf "%s %s %s", $5, $6, substr($7,1,5)}')
 
+# Days until the soonest-expiring certificate in Nginx Proxy Manager (optional)
+CERT_DB="${NPM_CERT_DB:-$HOME/docker/appdata/npm/data/database.sqlite}"
+CERT_DAYS="N/A"
+if [ -f "$CERT_DB" ] && command -v sqlite3 &>/dev/null; then
+    NOW_E=$(date +%s); MIN_D=""
+    while IFS='|' read -r _CN CEXP; do
+        [ -z "$CEXP" ] && continue
+        CE=$(date -d "$CEXP" +%s 2>/dev/null) || continue
+        CD=$(( (CE - NOW_E) / 86400 ))
+        { [ -z "$MIN_D" ] || [ "$CD" -lt "$MIN_D" ]; } && MIN_D=$CD
+    done < <(sqlite3 "$CERT_DB" \
+        "SELECT nice_name, expires_on FROM certificate WHERE is_deleted=0;" 2>/dev/null)
+    [ -n "$MIN_D" ] && CERT_DAYS=$MIN_D
+fi
+
 # --- COLORS ---
 NC="\033[0m"
 DIM="\033[38;5;238m"
@@ -96,6 +111,12 @@ C_STO=$(sc $STO_PERC); C_MED=$(sc $MED_PERC)
 C_VPN=$OK;  $VPN_OK || C_VPN=$CRIT
 C_UPD=$OK;  [ "$UPDATES" != "0" ] && C_UPD=$WARN
              [ "$SEC_UPD" != "0" ] && C_UPD=$CRIT
+C_CPU=$(sc $CPU_PERC); C_GPU=$(sc ${GPU_UTIL:-0})
+C_CERT=$OK
+if [ "$CERT_DAYS" != "N/A" ]; then
+    [ "$CERT_DAYS" -lt 30 ] && C_CERT=$WARN
+    [ "$CERT_DAYS" -lt 14 ] && C_CERT=$CRIT
+fi
 
 bar() {
     local p=$1 c=$2
@@ -211,10 +232,10 @@ printf "  ${LBL}%s${NC}  ·  up %s  ·  ${A}%s${NC}\n" "$OS" "$UPTIME_SHORT" "$I
 
 rule
 
-printf "  ${LBL}cpu  ${NC}%s   ${LBL}temp ${NC}%sC\n" "$LOAD" "$TEMP_C"
-printf "  ${LBL}gpu  ${NC}%sC   %s%% util   %s / %sG vram\n" \
-    "$GPU_TEMP" "$GPU_UTIL" "$GPU_MG" "$GPU_TG"
-printf "\n"
+printf "  ${LBL}cpu    ${NC}"; bar $CPU_PERC "$C_CPU"
+    printf "  ${C_CPU}%3d%%${NC}  %s\n" $CPU_PERC "$LOAD"
+printf "  ${LBL}gpu    ${NC}"; bar ${GPU_UTIL:-0} "$C_GPU"
+    printf "  ${C_GPU}%3d%%${NC}  %s°C  %s/%sG\n" ${GPU_UTIL:-0} "$GPU_TEMP" "$GPU_MG" "$GPU_TG"
 printf "  ${LBL}mem    ${NC}"; bar $MEM_PERC  "$C_MEM"
     printf "  ${C_MEM}%3d%%${NC}  %s / %s GB\n" $MEM_PERC  "$MEM_UG"    "$MEM_TG"
 printf "  ${LBL}root   ${NC}"; bar $DISK_PERC "$C_DISK"
@@ -235,6 +256,8 @@ rule
 
 printf "  ${LBL} login   ${NC}%s   %s\n" "$LAST_DATE" "$LAST_IP"
 printf "  ${LBL} backup  ${OK}%s${NC}\n" "$LAST_BACKUP"
+CERT_TXT="$CERT_DAYS"; [ "$CERT_DAYS" != "N/A" ] && CERT_TXT="$CERT_DAYS days"
+printf "  ${LBL} cert    ${C_CERT}%s${NC}\n" "$CERT_TXT"
 printf "\n  ${DIM}"
 for ((i=0;i<60;i++)); do printf "─"; done
 printf "${NC}\n\n"
