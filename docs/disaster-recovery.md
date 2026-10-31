@@ -37,12 +37,12 @@ The published scripts are sanitized ports of the live ones. Both nightly jobs ta
 - Compose files and `.env` files (encrypted off-site)
 - The VPN client's own state, so a restored host keeps its device identity
 - The system itself, weekly: root, `/boot` and EFI filesystems plus the installed package list
+- Photo originals, nightly: the Immich library, with changed or deleted files kept in a dated trash folder for 30 days; thumbnails and transcoded video are left out because Immich rebuilds them
 
 ### What's NOT backed up
 
 - Media files (`${MEDIA_DIR}`) — replaceable, too large to copy off-site economically
 - Bulk downloads and transcoder cache on `${STORAGE_DIR}`
-- Photos and synced files on the storage HDD (the Immich library and Nextcloud data) — they stay on their own disk and are not part of the nightly off-site job
 - Container images — pulled fresh from registries on restore (the self-built sidecar is rebuilt from its Dockerfile)
 
 ---

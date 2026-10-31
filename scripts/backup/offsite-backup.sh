@@ -13,7 +13,9 @@
 #      backup-verify.sh and the healthcheck read that marker, and a marker
 #      touched after a failed run would report a broken backup as fresh.
 #
-# Bulk data on the HDDs (photos, file sync, media) is not part of this job.
+# Photo originals on the storage HDD are synced too (step 1b), with a dated
+# trash folder so a local deletion cannot empty the off-site copy overnight.
+# Media and other bulk data on the HDDs are not part of this job.
 # Shares the "backup_pipeline" lock with backup-appdata.sh.
 # Run as root from cron. Requires: rclone with a crypt remote, docker, sqlite3.
 # ─────────────────────────────────────────────────────────────
@@ -30,6 +32,11 @@ RCLONE_LOG_DIR="${RCLONE_LOG_DIR:-$LOG_DIR/rclone}"
 RCLONE_CONFIG="${RCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
 RCLONE_REMOTE="${RCLONE_REMOTE:-offsite-crypt:homelab-backup}"
 MAX_DELETE="${MAX_DELETE:-500}"
+STORAGE_MOUNT="${STORAGE_MOUNT:-${STORAGE_DIR:-/mnt/storage}}"
+STORAGE_UUID="${STORAGE_UUID:-}"                 # optional: expected filesystem UUID
+PHOTO_DIR="${PHOTO_DIR:-$STORAGE_MOUNT/immich-photos}"
+PHOTO_MIN_FILES="${PHOTO_MIN_FILES:-500}"        # fewer files than this means a bad mount
+PHOTO_TRASH_DAYS="${PHOTO_TRASH_DAYS:-30}"
 LOG_FILE="$RCLONE_LOG_DIR/rclone_offsite_$(date +%Y%m%d).log"
 RC=(rclone --config "$RCLONE_CONFIG")
 ERRORS=0
@@ -79,6 +86,34 @@ do_sync "appdata" "$APPDATA_DIR" appdata \
   --exclude "prometheus/data/**" \
   --exclude "cloudflare-egress/cfwarp_*.txt*" --exclude "cloudflare-egress/snapshots/**"
 do_sync "compose + .env" "$COMPOSE_DIR" docker
+
+# 1b. Photo originals. Only what cannot be rebuilt: Immich recreates thumbs/
+#     and encoded-video/ itself. Changed or deleted files are moved to a dated
+#     folder under deleted-photos/ instead of disappearing, and those folders
+#     are purged after PHOTO_TRASH_DAYS — by folder name, because moved photos
+#     keep their old modification time.
+photo_files=0
+if mountpoint -q "$STORAGE_MOUNT" \
+   && [[ -z "$STORAGE_UUID" || $(findmnt -n -o UUID --target "$STORAGE_MOUNT") == "$STORAGE_UUID" ]] \
+   && [[ -d "$PHOTO_DIR/library" ]]; then
+  photo_files=$(find "$PHOTO_DIR/library" "$PHOTO_DIR/upload" "$PHOTO_DIR/profile" "$PHOTO_DIR/backups" \
+                  -type f 2>/dev/null | wc -l)
+fi
+if (( photo_files >= PHOTO_MIN_FILES )); then
+  do_sync "photo originals ($photo_files files)" "$PHOTO_DIR" photos \
+    --exclude "thumbs/**" --exclude "encoded-video/**" \
+    --backup-dir "$RCLONE_REMOTE/deleted-photos/$(date +%Y%m%d)"
+  cutoff=$(date -d "$PHOTO_TRASH_DAYS days ago" +%Y%m%d)
+  while IFS= read -r day; do
+    day=${day%/}
+    if [[ $day =~ ^[0-9]{8}$ && $day < $cutoff ]]; then
+      "${RC[@]}" purge "$RCLONE_REMOTE/deleted-photos/$day" --log-level INFO 2>&1 | tee -a "$LOG_FILE"
+    fi
+  done < <("${RC[@]}" lsf --dirs-only "$RCLONE_REMOTE/deleted-photos" 2>/dev/null)
+else
+  echo "→ photo originals SKIPPED: $STORAGE_MOUNT not mounted as expected, or only $photo_files files" | tee -a "$LOG_FILE"
+  ((ERRORS++))
+fi
 
 # 2. Secrets and config that a rebuild needs
 do_copy "scripts/.env"  "$HOME/scripts/.env" scripts
