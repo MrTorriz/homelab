@@ -2,7 +2,7 @@
 # healthcheck-demo.sh — sanitised demo wrapper for healthcheck.sh
 # Rendered by `vhs healthcheck.tape`. Echoes a successful run shape
 # without touching docker, ntfy, or DNS. Safe for recording.
-# Numbers mirror the 2026-08-28 snapshot (44 containers on the host).
+# Numbers mirror the 2026-10-31 snapshot (46 containers on the host).
 
 set -euo pipefail
 
@@ -19,11 +19,11 @@ sleep 0.4
 
 printf '%s containers running ............. ' "$(cyan '[1/4]')"
 sleep 0.5
-printf '%s\n' "$(green 'OK (44/44 expected)')"
+printf '%s\n' "$(green 'OK (46/46 expected)')"
 
 printf '%s VPN reality-check (Mullvad) ..... ' "$(cyan '[2/4]')"
 sleep 0.5
-printf '%s\n' "$(green 'OK — connected via a Swedish relay')"
+printf '%s\n' "$(green 'OK — host and torrent exits are Mullvad')"
 
 printf '%s external hostnames ............. ' "$(cyan '[3/4]')"
 sleep 0.4
@@ -31,11 +31,11 @@ printf '%s\n' "$(green 'OK (homepage, npm, jellyfin, immich, adguard, ntfy)')"
 
 printf '%s disk usage thresholds ........... ' "$(cyan '[4/4]')"
 sleep 0.4
-printf '%s\n' "$(green 'OK (/ 29%, /mnt/media 90%, /mnt/storage 73%)')"
+printf '%s\n' "$(green 'OK (/ 77%, /mnt/media 91%, /mnt/storage 76%)')"
 
 printf '\n'
 printf '%s ' "$(dim '[ntfy]')"
 printf '%s ' "$(yellow "${NTFY_TOPIC}:")"
-printf '%s\n' "$(green 'all 44 containers healthy — VPN locked, disks nominal')"
+printf '%s\n' "$(green 'all 46 containers healthy — VPN locked, disks nominal')"
 
 printf '%s\n' "$(dim "exit 0 — next run in 15 min")"

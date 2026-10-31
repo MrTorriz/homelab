@@ -7,19 +7,19 @@ The defense-in-depth pieces of the homelab.
 | `ufw-baseline.sh` | Apply default-deny UFW with a minimal allowlist |
 | `fail2ban/jail.local` | SSH brute-force protection |
 | `ssh/sshd_config` | Hardened SSH: keys-only, strong crypto, explicit user allowlist |
-| `suricata/` | Passive IDS — reference config from the bare-metal era; not deployed in the current VM |
+| `suricata/` | Passive IDS — reference config; not currently deployed |
 | `sysctl.d/99-homelab.conf` | Kernel tuning (swappiness + commented optionals) |
 | `hardening-checklist.md` | Copy-and-work-through list for any new Ubuntu host |
-| `vpn-killswitch.md` | How torrent traffic is bound to the VPN interface, with verification |
+| `vpn-killswitch.md` | Host-wide VPN lockdown, torrent client binding, and how both are verified |
 
 ## VPN killswitch in action
 
-`vpn-killswitch-check.sh` resolves the torrent client's egress IP, asserts it's the Mullvad exit and not the ISP, and refuses to exit zero if the rule isn't loaded:
+`vpn-killswitch-check.sh` asks an outside service which exit the host and the torrent client actually use, and refuses to exit zero unless both are Mullvad, lockdown is on and no IPv6 route exists:
 
 <p align="center">
-  <img src="../docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh verifying torrent traffic exits via Mullvad, not the ISP" width="780"/>
+  <img src="../docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check verifying that both the host and qBittorrent exit through Mullvad" width="780"/>
   <br/>
-  <sub>Synthetic demo (<code>scripts/demo/</code>, re-rendered 2026-08-29); not a live capture.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>); not a live capture.</sub>
 </p>
 
 See [`../docs/security.md`](../docs/security.md) for the full threat model and layer-by-layer reasoning.

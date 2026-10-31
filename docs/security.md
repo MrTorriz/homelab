@@ -6,10 +6,10 @@ Defense in depth: every layer assumes the layer above it has been bypassed.
 
 What this setup defends against:
 
-- **Internet-facing scanning and exploitation** — outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28.
-- **Compromise of a single container** — `no-new-privileges` blocks privilege escalation; the Docker socket is reached only through two proxies (read-only for dashboards, write-capable on an internal network for Watchtower and Portainer)
+- **Internet-facing scanning and exploitation** — external access rides an outbound Cloudflare Tunnel behind Cloudflare Access; nothing on the host needs an inbound port from the internet.
+- **Compromise of a single container** — `no-new-privileges` blocks privilege escalation; the Docker socket is reached only through two proxies (read-only for dashboards and update reporting, write-capable on an internal network for Portainer only)
 - **Credential leaks via DNS** — ISP never sees DNS queries
-- **VPN drops while seeding** — torrent traffic is killswitch-bound to the VPN interface
+- **VPN drops** — the whole host is in Mullvad lockdown mode, so nothing falls back to the ISP route; torrent traffic is additionally bound to the VPN interface
 - **Brute-force on SSH or web logins** — fail2ban auto-bans on log signal
 - **Silent disk failure** — Scrutiny watches SMART, alerts via ntfy
 
@@ -27,14 +27,14 @@ The attack surface mapped against [Microsoft's STRIDE model](https://learn.micro
 |---|---|---|---|
 | **S**poofing | Attacker impersonates a legitimate user to reach internal services | Cloudflare Access + Google OAuth; single allowlisted identity; hardware-backed 2FA | OAuth account compromise — mitigated by 2FA and session-length limits |
 | **S**poofing | Rogue device on LAN pretends to be a trusted client | SSH key-only; no service trusts LAN-origin without its own auth | LAN intrusion (unlikely without physical access) would grant dashboard visibility, not data access |
-| **T**ampering | Modification of container images or binaries | Images from official sources; Watchtower limited to non-critical services; stateful services pinned | Supply-chain compromise of an upstream registry |
+| **T**ampering | Modification of container images or binaries | Images from official sources; nothing updates unattended except OS security patches and a guarded monthly `cloudflared` update; stateful services pinned; self-built images pin their base by digest and their packages by SHA-256 | Supply-chain compromise of an upstream registry |
 | **T**ampering | Modification of configs or secrets at rest | `.env` never committed; `${APPDATA_DIR}` owned by non-root where possible; backups verified weekly; file-watcher service alerts on changes to critical paths | Compromise of the host itself bypasses this — the backups are the last line |
 | **R**epudiation | A malicious action inside the stack leaves no trail | journald retains 30d; SSH logins, sudo invocations, and fail2ban events push to ntfy in real time | Single-user host — repudiation is mostly a compliance concern, not operational |
-| **I**nfo disclosure | ISP or passive observer sees DNS queries or torrent traffic | AdGuard Home intercepts all LAN DNS; Mullvad WG with lockdown mode for torrents | Cloudflare terminates TLS — trusted for non-sensitive services only |
+| **I**nfo disclosure | ISP or passive observer sees DNS queries or traffic | AdGuard Home serves all LAN DNS; the whole host egresses through Mullvad in lockdown mode, IPv6 off | Cloudflare terminates TLS — trusted for non-sensitive services only |
 | **I**nfo disclosure | Web service leaks secrets in logs or error pages | Logs capped at 7d for stdout; secrets never passed as CLI args; `.env` mounted read-only | Application-level leaks still possible — reviewed per-service |
 | **D**enial of service | Brute-force against SSH or web logins | fail2ban watches sshd journal and NPM access logs, bans at the firewall; Cloudflare absorbs volumetric load | Dedicated DDoS against home IP would take the tunnel down but not expose the origin |
-| **D**enial of service | Container or script goes into runaway loop and exhausts resources | `docker_watcher.sh` (systemd) restarts crashlooping containers; cgroup limits where sensible; docker-events alerts catch repeated `die`/`oom` | No global memory/CPU limits on every container — identified gap |
-| **E**levation of privilege | Container escape | `no-new-privileges:true` on every service in `docker/compose.yml` (43/43, verified 2026-08-28 on all 44 live containers); Docker socket reached only via the two proxies, never raw; `privileged: true` on **0** containers — Scrutiny uses `cap_add: [SYS_RAWIO]` + device passthrough instead | 0-day in Docker itself — accepted |
+| **D**enial of service | Container or script goes into runaway loop and exhausts resources | `docker_watcher.sh` (systemd) restarts crashlooping containers; hard `mem_limit` on the 21 containers that can balloon; docker-events alerts catch repeated `die`/`oom` | Light services run without caps; a 2 GB swap file is the buffer |
+| **E**levation of privilege | Container escape | `no-new-privileges:true` on every service in `docker/compose.yml` (45/45, verified 2026-10-31 on all 46 live containers); Docker socket reached only via the two proxies, never raw; `privileged: true` on **0** containers — Scrutiny uses `cap_add: [SYS_RAWIO]` + device passthrough instead | 0-day in Docker itself — accepted |
 | **E**levation of privilege | User-level compromise escalates to root | SSH key-only, password auth off; sudo requires password; sudo invocations push a real-time alert; unattended-upgrades patches fast | Phishing of SSH private key — mitigated by passphrase and host isolation |
 
 ## Layers
@@ -44,16 +44,16 @@ The attack surface mapped against [Microsoft's STRIDE model](https://learn.micro
 | Control | Implementation |
 |---|---|
 | Inbound firewall | UFW default-deny; only LAN admin IPs whitelisted |
-| External access | Cloudflare Tunnel + Google OAuth. Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28. |
-| DNS | AdGuard Home on the host — ISP DNS bypassed entirely |
-| VPN egress (selective) | Mullvad WireGuard with lockdown mode for torrent client |
+| External access | Cloudflare Tunnel + Cloudflare Access with Google OAuth; the tunnel is opened outbound, from inside the VPN |
+| DNS | AdGuard Home on the host for the LAN; the host itself resolves through the VPN — ISP DNS is never used |
+| VPN egress (host-wide) | Mullvad WireGuard in lockdown mode; nftables `input`/`output`/`forward` policies `drop`; IPv6 off |
 
-The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` proves torrent egress goes through Mullvad while host traffic uses the ISP gateway:
+The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` asks an outside service which exit the host and the torrent client actually use, and fails unless both are Mullvad:
 
 <p align="center">
-  <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check.sh comparing qBittorrent egress IP vs host egress IP" width="780"/>
+  <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check verifying that both the host and qBittorrent exit through Mullvad" width="780"/>
   <br/>
-  <sub>Synthetic demo (<code>scripts/demo/</code>, re-rendered 2026-08-29); not a live capture.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>); not a live capture.</sub>
 </p>
 
 ### 2. Network
@@ -62,7 +62,7 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` pr
 |---|---|
 | Service binding | Containers bind only to `${LAN_IP}`, never `0.0.0.0` |
 | Reverse proxy | All web services routed via Nginx Proxy Manager with LE wildcard cert |
-| Network IDS | Not deployed in the current VM. Suricata ran on the bare-metal host; reference config in `security/suricata/` (see below) |
+| Network IDS | Not currently deployed. Reference config in `security/suricata/` (see below) |
 
 ### 3. Host
 
@@ -70,18 +70,19 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` pr
 |---|---|
 | SSH | Key-only (`PasswordAuthentication no`), root login disabled |
 | Brute-force protection | fail2ban watches sshd, NPM, and other web log sources |
-| Patching | Unattended-upgrades for security updates |
+| Patching | Unattended-upgrades for Ubuntu security updates; container updates applied by hand after Watchtower/diun report them |
 | Audit | UFW logs + journald → weekly digest; real-time push for sudo, SSH, ban, and container lifecycle events |
 
 ### 4. Containers
 
 | Control | Implementation |
 |---|---|
-| Privilege | `no-new-privileges:true` on every service in `docker/compose.yml` (43/43, verified 2026-08-28) |
-| Docker API | Two `tecnativa/docker-socket-proxy` instances: read-only on `socket-ro` (Homepage, Dozzle, diun, Glances), write-capable on the `internal` `socket-rw` network (Watchtower, Portainer only) |
+| Privilege | `no-new-privileges:true` on every service in `docker/compose.yml` (45/45; 46/46 live, verified 2026-10-31) |
+| Docker API | Two `tecnativa/docker-socket-proxy` instances: read-only on `socket-ro` (Homepage, Dozzle, diun, Glances, Watchtower), write-capable on the `internal` `socket-rw` network (Portainer only) |
 | Secrets | Always via `.env` — never inline in compose, never committed |
-| `privileged: true` | None (0/44 live containers, 2026-08-28). Scrutiny gets SMART access via `cap_add: [SYS_RAWIO]` and explicit `devices:` instead |
-| Auto-updates | Watchtower at 02:00 UTC, with `com.centurylinklabs.watchtower.enable=false` on 11 stateful/critical services; diun reports image updates weekly without acting |
+| `privileged: true` | None (0/46 live containers, 2026-10-31). Scrutiny gets SMART access via `cap_add: [SYS_RAWIO]` and explicit `devices:`; the tunnel egress sidecar gets `NET_ADMIN` and `/dev/net/tun`, nothing more |
+| Updates | Watchtower in monitor-only mode at 02:00 UTC and diun weekly — both report, neither acts. Updates are applied by hand, stateful services with a database copy and rollback tag |
+| Memory | Hard `mem_limit` on 21 of 46 containers — every service that can balloon |
 
 ### 5. Application
 
@@ -89,11 +90,12 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` pr
 |---|---|
 | Auth (external) | Google OAuth via Cloudflare Access — single allowed identity |
 | Auth (internal) | Per-app credentials, no password reuse |
-| Backup | Nightly rsync of `${APPDATA_DIR}` + weekly verification job |
+| Backup | Nightly archive of `${APPDATA_DIR}` with database dumps, encrypted off-site copy, weekly verification job, restore drills |
+| Downloads | qBittorrent skips executables, scripts, archives and disk images by file type — nothing in a media download should ever be one |
 
-## Network IDS — Suricata (reference config; not deployed in the current VM)
+## Network IDS — Suricata (reference config; not currently deployed)
 
-> Suricata ran as a system service on the bare-metal host until the June 2026 move into a Proxmox VM. It has **not** been redeployed in the VM (verified 2026-08-28: no unit, no container, `suricata-ntfy.service` disabled). The config in `security/suricata/` and the text below are kept as reference; whether to bring it back is an open decision.
+> Suricata ran as a system service on the original bare-metal install until June 2026. It was not redeployed during the VM period or after the return to bare metal (checked 2026-10-31: `suricata` and `suricata-ntfy` inactive). The config in `security/suricata/` and the text below are kept as reference; whether to bring it back is an open decision.
 
 UFW stops what shouldn't get in. fail2ban stops what's hammering known login surfaces. Neither tells you anything about what's already inside, talking outbound, or doing something quietly weird on the LAN. Suricata filled that gap.
 
@@ -119,7 +121,7 @@ UFW stops what shouldn't get in. fail2ban stops what's hammering known login sur
 <p align="center">
   <img src="img/alerting.gif" alt="fail2ban status + IDS fast.log tail with example alerts" width="780"/>
   <br/>
-  <sub>Synthetic demo (<code>scripts/demo/</code>, re-rendered 2026-08-29); Suricata shown here is not deployed in the current VM.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>); the Suricata event shown here is not currently deployed.</sub>
 </p>
 
 ## Event-driven alerting
@@ -135,7 +137,7 @@ So the alerting model is now event-driven, layered on top of the periodic health
 | `sudo-notify` | Interactive sudo invocation | PAM `pam_exec` on `sudo`, filtered to TTYs only (skips cron/scripts) | ntfy (high) |
 | `docker-events-ntfy` | Container `start`/`stop`/`die`/`oom` | live-only systemd monitor; companion not published in this showcase | ntfy |
 | `npm-monitor` | Path scans, 401/403/404 spam, suspect user agents | systemd unit tailing NPM access logs | ntfy |
-| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — bare-metal era, disabled in the current VM | ntfy |
+| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — currently not deployed | ntfy |
 | `file-watcher` | Change in critical file paths | systemd unit | ntfy |
 
 Every successful SSH login pushes, not just failed ones — the reasoning and the admin-noise filtering are in [`observability.md`](observability.md#admin-noise-filtering).
@@ -152,7 +154,7 @@ All of this runs through a single `ntfy_send` shim in `lib.sh`, so topic, priori
 | NPM access | NPM logs → fail2ban + npm-monitor → ntfy | 14 days |
 | Container lifecycle | live-only Docker event monitor → ntfy | live |
 | Container stdout | Docker logs (json-driver, capped) | 7 days |
-| Suricata (bare-metal era) | `fast.log` + `eve.json` under `/var/log/suricata`; severity 1–2 → ntfy | not deployed in the VM |
+| Suricata (when deployed) | `fast.log` + `eve.json` under `/var/log/suricata`; severity 1–2 → ntfy | not currently deployed |
 | Healthcheck alerts | ntfy (push to phone) | – |
 | SMART | Scrutiny + InfluxDB | 90 days |
 
@@ -160,7 +162,7 @@ All of this runs through a single `ntfy_send` shim in `lib.sh`, so topic, priori
 
 - **Suspicious SSH attempts** → `fail2ban-client status sshd`, then check journald for the offending IPs and confirm the ban took
 - **Unexpected SSH-login push** → if the source is unknown, immediately revoke the session (`pkill -KILL -u <user>`), rotate the SSH key, audit `last` and `journalctl _COMM=sshd`
-- **VPN drop suspected** → `wg show`, check qBittorrent traffic vs VPN interface counters, run `vpn-killswitch-check.sh`
+- **VPN drop suspected** → `mullvad status`, then run `vpn-killswitch-check.sh` — remember that *Connected* is a claim, not a test (see [lessons learned](lessons-learned.md#a-fail-closed-guard-that-closed-too-late))
 - **Container compromise suspected** → stop container, snapshot `${APPDATA_DIR}/<service>`, inspect logs offline, rebuild from image
 - **Disk warning from Scrutiny** → check Scrutiny dashboard, run extended SMART test, prepare replacement before failure
 

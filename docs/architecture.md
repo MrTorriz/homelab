@@ -1,6 +1,6 @@
 # Architecture
 
-A single-host homelab with a strong perimeter, isolated egress for risky workloads, and a small but consistent set of internal abstractions. The stack runs inside one VM (`docker-host`) on a Proxmox host — the [virtualization layer](https://github.com/MrTorriz/proxmox-homelab) (VM fleet, GPU + whole-disk passthrough, VPN gateway) is documented separately; everything below is the view from inside that VM.
+A single bare-metal host with a strong perimeter, VPN-only egress, and a small but consistent set of internal abstractions. Ubuntu runs directly on the hardware; Docker Compose runs the workload. From June to September 2026 the same stack lived in a VM on a Proxmox host — why that layer was removed again is in [decisions](decisions.md#platform-bare-metal-after-a-hypervisor-detour).
 
 ## Network topology
 
@@ -12,7 +12,11 @@ flowchart TB
     end
     subgraph LAN[LAN 192.168.x.0/24]
         SW[L2 switch]
-        Host["Docker host (VM)"]
+        subgraph Host["Docker host (bare metal)"]
+            Apps[Containers]
+            Egress[WARP egress sidecar]
+            CFD[cloudflared]
+        end
         Clients[Phones · TVs · laptops]
     end
 
@@ -20,31 +24,34 @@ flowchart TB
     SW --- Host
     SW --- Clients
 
-    Host -. WireGuard .-> Mullvad[(Mullvad exit nodes)]
+    Host ==>|WireGuard, lockdown mode| Mullvad[(Mullvad exit)]
     Mullvad --> Internet
-
-    Host -. Cloudflared tunnel .-> CF[Cloudflare edge]
-    CF --> Internet
+    CFD -.-|shares netns| Egress
+    Egress -.->|MASQUE inside the Mullvad tunnel| CF[Cloudflare edge]
 ```
 
 **Key properties:**
-- **Ingress is an outbound tunnel** — external access rides a Cloudflare Tunnel + Google OAuth. Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28.
-- **The whole VM egresses through Mullvad** (lockdown mode) and resolves DNS through the tunnel's resolver; AdGuard Home on the LAN address serves the other LAN clients.
-- **All LAN DNS** is intercepted by AdGuard Home (running in the `docker-host` VM). The ISP-issued resolver is never used.
-- **Risky egress** (torrent traffic) is locked to the WireGuard interface — if VPN drops, traffic stops (see `../security/vpn-killswitch.md`).
+
+- **Every packet leaves through Mullvad.** The host runs the Mullvad daemon in lockdown mode with LAN sharing on; the nftables policies for `input`, `output` and `forward` are `drop` for anything that is not LAN or tunnel traffic. If the tunnel drops, the host goes quiet instead of falling back to the ISP.
+- **Ingress is an outbound tunnel.** External access rides a Cloudflare Tunnel behind Cloudflare Access + Google OAuth. The tunnel itself is opened from inside the VPN: `cloudflared` shares the network namespace of a small WARP client container, whose encrypted transport in turn runs through the host's Mullvad tunnel — see [`docker/cloudflare-egress/`](../docker/cloudflare-egress/README.md).
+- **DNS never touches the ISP.** AdGuard Home serves the LAN; the host itself resolves through the tunnel's resolver so that a stopped AdGuard container can never take the host's own DNS with it.
+- **IPv6 is off** on the host (`sysctl`), and verified to have no global address and no route.
+- **Torrent traffic is double-bound** — qBittorrent is pinned to the WireGuard interface on top of the host-wide lockdown (see [`../security/vpn-killswitch.md`](../security/vpn-killswitch.md)).
 
 ## Storage
 
-Three logical tiers, as the VM sees them (the two HDDs are whole-disk passthrough from the Proxmox host):
+Three logical tiers:
 
 | Mount | Type | Purpose |
 |---|---|---|
-| `/` | NVMe | OS, container runtime, ephemeral logs |
-| `${APPDATA_DIR}` | NVMe | Container configs (persistent, small files, latency-sensitive) |
-| `${MEDIA_DIR}` | HDD | Bulk media (movies, series, music, books) |
-| `${STORAGE_DIR}` | HDD | Photos, downloads, transcoder cache, app data overflow |
+| `/` | NVMe SSD (512 GB) | OS, container runtime, logs, lab images |
+| `${APPDATA_DIR}` | NVMe SSD | Container configs and databases (persistent, small files, latency-sensitive) |
+| `${MEDIA_DIR}` | 4 TB HDD | Bulk media (movies, series, music, books) |
+| `${STORAGE_DIR}` | 4 TB HDD | Photos, downloads, Nextcloud data, transcoder cache, local backup archives |
 
-Backups: nightly rsync of `${APPDATA_DIR}` → off-host destination, weekly verification job that lists files and compares sizes.
+The data disks are identified by UUID in `fstab`, and the services that write to them only start after a boot guard has confirmed both mounts are present — an empty mount point must never be mistaken for an empty library.
+
+Backups: nightly archive of `${APPDATA_DIR}` with consistent SQL dumps of every database, encrypted off-site copy, weekly off-site copy of system files. Details in [disaster recovery](disaster-recovery.md).
 
 ## Service interaction
 
@@ -56,10 +63,11 @@ flowchart LR
     NPM --> Sonarr & Radarr & Bazarr & Prowlarr
     NPM --> Immich
     NPM --> Homepage
+    NPM --> Kuma[Uptime Kuma]
 
     Sonarr & Radarr --> Prowlarr --> qBittorrent
     qBittorrent -->|completed| Sonarr
-    qBittorrent -.->|VPN only| Internet
+    qBittorrent -.->|wg0 only| Internet
 
     Jellyfin --> NVENC{NVIDIA GPU}
     Immich-ML --> NVENC
@@ -69,14 +77,13 @@ flowchart LR
     Nextcloud --> Postgres[(Postgres 16)]
     Nextcloud --> Redis[(Redis 7)]
 
-    ProxyRO[docker-proxy<br/>read-only · socket-ro] --> Homepage & Dozzle & diun
-    ProxyRW[docker-proxy-rw<br/>write · socket-rw internal] --> Watchtower & Portainer
-    diun -->|weekly image radar| ntfy[(ntfy push)]
+    ProxyRO[docker-proxy<br/>read-only · socket-ro] --> Homepage & Dozzle & diun & Watchtower
+    ProxyRW[docker-proxy-rw<br/>write · socket-rw internal] --> Portainer
     fail2ban -->|reads logs| NPM
-    fail2ban -->|bans at firewall| UFW[(UFW / iptables)]
+    fail2ban -->|bans at firewall| UFW[(UFW / nftables)]
 ```
 
-**Detection vs response, split:** `fail2ban` handles brute-force responses against SSH and NPM logs (it bans IPs); the event-driven scripts push what it and the host are doing to ntfy. Network IDS (Suricata) ran on the bare-metal host and is not deployed in the current VM. The GPU is shared three ways: Jellyfin NVENC, Tdarr NVENC and Immich ML (CUDA) — all through the NVIDIA container runtime against the single card the hypervisor passes into this VM. Two Docker socket proxies split the blast radius: the read-only one on `socket-ro` for dashboards and diun, the write-capable one on an `internal` network reachable only by Watchtower and Portainer. Nextcloud sits behind NPM with its own Postgres and Redis.
+**Detection vs response, split:** `fail2ban` handles brute-force responses against SSH and NPM logs (it bans IPs); the event-driven scripts push what it and the host are doing to ntfy. The GPU is shared three ways — Jellyfin NVENC, Tdarr NVENC and Immich ML (CUDA) — through the NVIDIA container runtime. Two Docker socket proxies split the blast radius: the read-only one on `socket-ro` serves the dashboards, diun and Watchtower (which only reports available updates), the write-capable one sits on an `internal` network that only Portainer can reach. Nextcloud sits behind NPM with its own Postgres and Redis.
 
 ## External access
 
@@ -85,29 +92,30 @@ sequenceDiagram
     participant U as User (away from home)
     participant CF as Cloudflare Edge
     participant OAuth as Google OAuth
-    participant CFD as cloudflared (LAN)
+    participant CFD as cloudflared (host)
     participant NPM
     participant App
 
+    Note over CFD,CF: Tunnel opened outbound: WARP sidecar → Mullvad → Cloudflare
     U->>CF: GET https://app.example.com
     CF->>OAuth: Auth required
     OAuth-->>U: Login flow
     U->>OAuth: Email + 2FA
     OAuth-->>CF: Allowed
-    CF->>CFD: Tunnel request
-    CFD->>NPM: HTTP request (LAN)
+    CF->>CFD: Request over the existing tunnel
+    CFD->>NPM: HTTPS (certificate verified)
     NPM->>App: Proxy
     App-->>U: Response
 ```
 
-Outbound Cloudflare Tunnel is the intended ingress path; the router port-forward table was not re-verified on 2026-08-28. The tunnel's public hostnames resolve to Cloudflare, not to the home IP.
+The tunnel's public hostnames resolve to Cloudflare, never to the home IP, and the tunnel needs no inbound port on the router. Cloudflare sends an e-mail when the tunnel goes down or degrades, which is the one alert that does not depend on the host being alive.
 
 ## Why a single host
 
 A multi-host setup would buy redundancy at the cost of operational surface area. For a homelab:
 
-- One box means a small surface: the workload is a single VM to harden, one cron to maintain, one set of backups to verify — the hypervisor beneath it is deliberately minimal ([proxmox-homelab](https://github.com/MrTorriz/proxmox-homelab)).
-- The host is well within capacity for the workload (CPU rarely above 30%, RAM usage steady, GPU only loaded during transcodes).
-- Failure mode is acceptable: media is replaceable, photos are off-site backed up, *arr config is in `${APPDATA_DIR}` (backed up nightly).
+- One box means a small surface: one OS to patch and harden, one cron to maintain, one set of backups to verify. The hypervisor that briefly sat underneath was removed for exactly this reason.
+- The host is well within capacity for the workload (CPU rarely above 30 %, GPU only loaded during transcodes and photo indexing). Memory is the tight resource, which is why the heavy services carry `mem_limit` caps.
+- Failure mode is acceptable: media is replaceable, photos and documents are backed up off-site, and every service's config is in `${APPDATA_DIR}`, archived nightly.
 
-If this ever needs HA, the cleanest path is replicating the host as a cold spare and rsync'ing `${APPDATA_DIR}` continuously — not adding orchestration layers.
+If this ever needs HA, the cleanest path is a cold spare that can take the latest system image and appdata archive — not an orchestration layer.

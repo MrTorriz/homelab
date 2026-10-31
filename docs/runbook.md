@@ -63,52 +63,58 @@ If this was a config regression, add a test to CI that would have caught it (com
 
 ---
 
-## 2. VPN drop — torrent traffic possibly leaking
+## 2. VPN down or misbehaving
 
-**Symptom:** `wg show` shows no recent handshake, or qBittorrent UI shows connections but traceroute goes via ISP.
+**Symptom:** the healthcheck or `vpn-killswitch-check.sh` reports *no answer* or *exit is NOT Mullvad*; downloads stall; external access may also be down because the tunnel sidecar shares the same egress.
 
-> **The killswitch is designed so this can't leak** — Mullvad's lockdown mode plus explicit iptables rules on the torrent namespace. This runbook is the "verify it actually held" path.
+> **Lockdown mode is designed so this can't leak** — when the tunnel is down, nothing leaves the host at all. This runbook is the "verify it actually held, then get traffic flowing again" path. *No answer* is an outage; *wrong answer* is a leak and a P0.
 
 ### Detect
 
 ```bash
-wg show wg0-mullvad | grep "latest handshake"
-./scripts/vpn-killswitch-check.sh
+mullvad status
+./scripts/vpn-killswitch-check.sh; echo "exit $?"   # 2 = wrong exit (leak), 4 = no answer (outage)
 ```
 
-The check script exits non-zero and sends ntfy if any torrent traffic would egress without the tunnel.
+Do not trust `mullvad status` alone — the client can report *Connected* while its firewall refuses every connection ([lessons learned](lessons-learned.md#a-fail-closed-guard-that-closed-too-late)).
 
 ### Contain
 
+Only needed if the check reports a wrong exit:
+
 ```bash
-docker stop qbittorrent       # traffic stops immediately, magnets pause
+docker stop qbittorrent       # traffic stops immediately, torrents pause
 ```
 
 ### Diagnose
 
 ```bash
-sudo wg-quick down wg0-mullvad
-sudo wg-quick up wg0-mullvad
-curl --interface wg0-mullvad https://am.i.mullvad.net/json
+mullvad lockdown-mode get                    # must be on
+mullvad relay get                            # location constraint in use
+curl -s https://am.i.mullvad.net/json        # does anything get out at all?
+sudo nft list ruleset | grep -A1 -E 'chain (input|output|forward)'
+journalctl -u mullvad-daemon --since -1h | tail -50
 ```
 
-If the tunnel won't come up:
+If the tunnel won't pass traffic:
 
 - Check the Mullvad account status (expired?)
-- Check the endpoint in `/etc/wireguard/wg0-mullvad.conf` — rotate to a fresh peer via `scripts/mullvad-rotate.sh`
-- Check if the ISP is blocking UDP 51820 (rare, but happens — fall back to port 443 endpoint)
+- Check whether a package update just restarted networking — the early-boot block can re-apply itself over a running tunnel
+- Check if UDP to the relay is blocked (rare, but happens — switch the tunnel to TCP/443 obfuscation)
 
 ### Recover
 
 ```bash
-./scripts/mullvad-rotate.sh   # picks a healthy peer, re-applies killswitch rules
-docker start qbittorrent
+mullvad reconnect
 ./scripts/vpn-killswitch-check.sh && echo "safe"
+docker start qbittorrent      # only after the check passes
 ```
+
+`scripts/vpn-watchdog.sh` does the reconnect on its own every 15 minutes, with a cooldown so a provider-side outage does not become a restart loop.
 
 ### Postmortem
 
-If the killswitch *didn't* hold: this is a P0 — inspect iptables counters, audit which PIDs had outbound non-tunnel traffic during the window, and write a regression test before restarting torrents.
+If the check ever reported a wrong exit: inspect the nftables counters, audit which processes had outbound non-tunnel traffic during the window, and add a regression check before restarting torrents.
 
 ---
 
@@ -204,8 +210,11 @@ If AdGuard config caused the outage, the fix is: edit in git, lint, deploy — d
 
 ### Detect
 
+Cloudflare's tunnel-health e-mail usually arrives first. Then:
+
 ```bash
 docker logs --tail 50 cloudflared
+docker inspect -f '{{.State.Health.Status}}' cloudflare-egress
 curl -I https://app.example.com   # from phone data, not LAN
 ```
 
@@ -221,15 +230,18 @@ Nothing to contain — this is "external access degraded," not a security event.
 | Cloudflared logs "no healthy origin" | NPM is down, not the tunnel |
 | OAuth redirects in a loop | Cloudflare Access policy was edited |
 | 521 Web Server Down | Tunnel up, but upstream (NPM) isn't reachable from cloudflared's network |
+| Cloudflared can't reach the edge, everything local works | The egress sidecar is unhealthy, or the VPN is down — check section 2 first |
 
 ### Recover
 
-Restart in order of blast radius:
+Restart in order of blast radius. `cloudflared` lives in the egress sidecar's network namespace, so the sidecar goes first:
 
 ```bash
-docker restart cloudflared
+docker restart cloudflare-egress && docker restart cloudflared
 docker restart npm            # only if logs point here
 ```
+
+If the sidecar container was *recreated* (new image), recreate both together: `docker compose up -d --force-recreate cloudflare-egress cloudflared`.
 
 If the tunnel token is revoked, regenerate in the Cloudflare dashboard and update `.env` — do not commit the token.
 
@@ -243,5 +255,5 @@ Record the symptom → cause mapping in this table if you hit a new failure mode
 
 - **Don't fix what you don't understand** — `docker restart` is a reasonable first move, but if it keeps breaking, restart is a coping mechanism, not a fix.
 - **Preserve evidence** — before nuking state, `docker logs > /tmp/<svc>-$(date +%s).log`. Post-incident analysis is blind without it.
-- **One change at a time** — during an incident, never edit compose and restart AdGuard and rotate VPN simultaneously. You'll never know which fix worked.
+- **One change at a time** — during an incident, never edit compose, restart AdGuard and reconnect the VPN simultaneously. You'll never know which fix worked.
 - **Write down what you learned** — if you used a command not in this runbook, it belongs in this runbook.

@@ -3,10 +3,11 @@
 #
 # A self-hosted stack covering media, photos, files & sync,
 # DNS, security, observability and reverse proxy.
-# 43 services here + 1 personal service (private image)
-# = 44 containers on the live host (2026-08-28).
+# 45 services here + 1 personal service (private image)
+# = 46 containers on the live host (2026-10-31).
 # Every container runs with `no-new-privileges` and binds only
-# to the LAN interface (or 127.0.0.1).
+# to the LAN interface (or 127.0.0.1). Services that can grow
+# under load carry a `mem_limit` — a ceiling, not a reservation.
 #
 # Setup:  cp .env.example .env  →  edit  →  docker compose up -d
 # ────────────────────────────────────────────────────────────
@@ -21,6 +22,13 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/check-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     ports:
       - "${LAN_IP}:80:80"
       - "${LAN_IP}:81:81"
@@ -33,16 +41,32 @@ services:
     networks: [default]
 
   # ── Dashboards ───────────────────────────────────────────
+  # Widget credentials come from a separate env file next to the config
+  # (HOMEPAGE_VAR_* placeholders in services.yaml), never from compose.
+  # The proxied hostnames resolve to the bridge gateway so widgets reach
+  # NPM on the LAN instead of hairpinning out through the tunnel.
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
     restart: always
     security_opt: [no-new-privileges:true]
+    mem_limit: 384m
+    env_file:
+      - path: ${APPDATA_DIR}/homepage/.env
+        required: false
     environment:
-      - HOMEPAGE_ALLOWED_HOSTS=${LAN_IP}:3000,${LAN_IP},localhost,homepage.${DOMAIN}
+      - HOMEPAGE_ALLOWED_HOSTS=${LAN_IP}:3000,${LAN_IP},localhost,127.0.0.1,homepage.${DOMAIN}
       - DOCKER_HOST=tcp://docker-proxy:2375
+    extra_hosts:
+      - "hp.${DOMAIN}:${DOCKER_GATEWAY}"
+      - "qbittorrent.${DOMAIN}:${DOCKER_GATEWAY}"
+      - "auth.${DOMAIN}:${DOCKER_GATEWAY}"
     volumes:
       - ${APPDATA_DIR}/homepage:/app/config
+      - ${APPDATA_DIR}/homepage/custom.css:/app/public/custom.css:ro
+      - ${APPDATA_DIR}/homepage/custom.js:/app/public/custom.js:ro
+      - ${APPDATA_DIR}/homepage/backup:/app/public/backup:ro
+      - ${APPDATA_DIR}/homepage/icons:/app/public/icons:ro
       - ${MEDIA_DIR}:/mnt/media:ro
       - ${STORAGE_DIR}:/mnt/storage:ro
     ports:
@@ -55,21 +79,27 @@ services:
     container_name: glance
     restart: always
     security_opt: [no-new-privileges:true]
+    environment:
+      - MINIFLUX_API_TOKEN=${MINIFLUX_API_TOKEN}
+      - LAN_IP=${LAN_IP}
     ports:
       - "${LAN_IP}:8092:8080"
     volumes:
-      - ${APPDATA_DIR}/glance/glance.yml:/app/config/glance.yml
+      - ${APPDATA_DIR}/glance/glance.yml:/app/config/glance.yml:ro
       - ${APPDATA_DIR}/glance/pages.yml:/app/config/pages.yml:ro
       - ${APPDATA_DIR}/glance/custom.css:/app/assets/custom.css:ro
     networks: [default]
 
   # Second Glance instance with a different theme, kept as an alternative
-  # start page. (Theme-switching via Homepage iframes was retired 2026-06-21.)
+  # start page.
   glance-amber:
     image: glanceapp/glance:latest
     container_name: glance-amber
     restart: always
     security_opt: [no-new-privileges:true]
+    environment:
+      - MINIFLUX_API_TOKEN=${MINIFLUX_API_TOKEN}
+      - LAN_IP=${LAN_IP}
     ports:
       - "${LAN_IP}:8095:8080"
     volumes:
@@ -79,12 +109,12 @@ services:
     networks: [default]
 
   # ── Docker management ────────────────────────────────────
-  # Two socket proxies with different blast radius (since 2026-08-23):
+  # Two socket proxies with different blast radius:
   #   docker-proxy    read-only API (POST=0) on `socket-ro`, consumed by
-  #                   homepage, dozzle, diun and glances (via 127.0.0.1:2375)
+  #                   homepage, dozzle, watchtower, diun and glances
+  #                   (glances via 127.0.0.1:2375)
   #   docker-proxy-rw write API (POST=1) on the internal `socket-rw` net,
-  #                   reachable only by the containers that must mutate
-  #                   state (watchtower, portainer). No published ports.
+  #                   reachable only by Portainer. No published ports.
   docker-proxy:
     image: tecnativa/docker-socket-proxy:latest
     container_name: docker-proxy
@@ -97,6 +127,7 @@ services:
       - IMAGES=1
       - INFO=1
       - NETWORKS=1
+      - NODES=1
       - SERVICES=1
       - TASKS=1
       - VOLUMES=1
@@ -105,6 +136,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks: [socket-ro]
 
+  # Write-capable proxy: internal `socket-rw` network only. Never attach it
+  # to the default network and never publish a port for it.
   docker-proxy-rw:
     image: tecnativa/docker-socket-proxy:latest
     container_name: docker-proxy-rw
@@ -115,6 +148,7 @@ services:
       - IMAGES=1
       - INFO=1
       - NETWORKS=1
+      - NODES=1
       - SERVICES=1
       - TASKS=1
       - VOLUMES=1
@@ -131,6 +165,7 @@ services:
     environment:
       - DOCKER_HOST=tcp://docker-proxy-rw:2375
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - ${APPDATA_DIR}/portainer:/data
     ports:
       - "${LAN_IP}:9000:9000"
@@ -150,62 +185,57 @@ services:
     networks: [default, socket-ro]
 
   # containrrr/watchtower is archived; the nicholas-fedor fork is maintained.
-  # Containers that must not be auto-updated carry the label
-  # `com.centurylinklabs.watchtower.enable=false` (reverse proxy, databases,
-  # DNS, tunnel, SMART monitor, Immich).
+  # Monitor-only: it checks registries nightly and reports, but never pulls
+  # new images or restarts anything, so the read-only proxy is enough.
+  # Image updates are applied by hand after reading the release notes.
   watchtower:
     image: ghcr.io/nicholas-fedor/watchtower:latest
     container_name: watchtower
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     environment:
-      - DOCKER_HOST=tcp://docker-proxy-rw:2375
+      - DOCKER_HOST=tcp://docker-proxy:2375
       - DOCKER_API_VERSION=1.45
-      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_MONITOR_ONLY=true
       # The host runs cron in UTC while the other containers use ${TZ}.
       # This container is pinned to UTC so the schedule below can be read
       # side by side with `crontab -l` without converting.
-      # 02:00 UTC deliberately sits before the backup chain (appdata backup
-      # 04:00 UTC, offsite rclone 04:30 UTC, running 4-7 h). Never schedule
-      # restarts inside 04-11 UTC: the offsite job syncs appdata live and
-      # containers restarting mid-sync produce an inconsistent copy.
+      # 02:00 UTC sits before the backup chain (appdata backup 04:00 UTC,
+      # offsite rclone 04:30 UTC, running 4-7 h).
       - WATCHTOWER_SCHEDULE=0 0 2 * * *
       - TZ=UTC
-    depends_on: [docker-proxy-rw]
-    networks: [default, socket-rw]
+    depends_on: [docker-proxy]
+    networks: [default, socket-ro]
 
-  # Notify-only image radar: checks registries weekly (Mon 09:00) and posts
-  # to ntfy. It never pulls or restarts anything, so it only needs the
-  # read-only proxy.
+  # Image-update radar: checks registries every Sunday 07:00 UTC. Results go
+  # into the weekly summary report instead of a separate push. It never
+  # pulls or restarts anything, so it only needs the read-only proxy.
   diun:
     image: crazymax/diun:latest
     container_name: diun
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     environment:
-      - TZ=${TZ}
-      - DIUN_WATCH_SCHEDULE=0 0 9 * * 1
+      - TZ=UTC
+      - DIUN_WATCH_SCHEDULE=0 0 7 * * 0
       - DIUN_WATCH_JITTER=30s
       - DIUN_WATCH_FIRSTCHECKNOTIF=false
       - DIUN_PROVIDERS_DOCKER=true
       - DIUN_PROVIDERS_DOCKER_ENDPOINT=tcp://docker-proxy:2375
       - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
-      - DIUN_NOTIF_NTFY_ENDPOINT=http://ntfy
-      - DIUN_NOTIF_NTFY_TOPIC=${NTFY_TOPIC}
-      - DIUN_NOTIF_NTFY_TOKEN=${NTFY_TOKEN}
-      - DIUN_NOTIF_NTFY_PRIORITY=3
     volumes:
       - ${APPDATA_DIR}/diun:/data
-    depends_on: [docker-proxy, ntfy]
+    depends_on: [docker-proxy]
     networks: [default, socket-ro]
 
   # ── Media stack ──────────────────────────────────────────
-  # Jellyfin replaced Plex on 2026-06-20. NVENC via the NVIDIA runtime.
+  # NVENC via the NVIDIA container runtime.
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 2g
     runtime: nvidia
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8096/health || exit 1"]
@@ -217,14 +247,17 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - JELLYFIN_PublishedServerUrl=http://${LAN_IP}:8096
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
     volumes:
       - ${APPDATA_DIR}/jellyfin:/config
       - ${MEDIA_DIR}:/mnt/media:ro
       - ${STORAGE_DIR}/data:/data:ro
+      - ${STORAGE_DIR}/series:/mnt/storage/series:ro
     ports:
       - "${LAN_IP}:8096:8096"
+      - "${LAN_IP}:7359:7359/udp"
     networks: [default]
 
   sonarr:
@@ -232,6 +265,7 @@ services:
     container_name: sonarr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 512m
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -239,6 +273,7 @@ services:
     volumes:
       - ${APPDATA_DIR}/sonarr:/config
       - ${STORAGE_DIR}/data:/data
+      - ${STORAGE_DIR}:/mnt/storage
       - ${MEDIA_DIR}:/mnt/media
     ports:
       - "${LAN_IP}:8989:8989"
@@ -249,6 +284,7 @@ services:
     container_name: radarr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 512m
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -266,6 +302,7 @@ services:
     container_name: lidarr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 384m
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -278,11 +315,14 @@ services:
       - "${LAN_IP}:8686:8686"
     networks: [default]
 
+  # Was OOM-killed at a 512 MiB ceiling.
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    cpus: "2.0"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -290,6 +330,7 @@ services:
     volumes:
       - ${APPDATA_DIR}/bazarr:/config
       - ${STORAGE_DIR}/data:/data
+      - ${STORAGE_DIR}:/mnt/storage
       - ${MEDIA_DIR}:/mnt/media
     ports:
       - "${LAN_IP}:6767:6767"
@@ -300,6 +341,7 @@ services:
     container_name: prowlarr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 384m
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -317,18 +359,28 @@ services:
     security_opt: [no-new-privileges:true]
     environment:
       - LOG_LEVEL=info
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=none
       - TZ=${TZ}
     ports:
       - "${LAN_IP}:8191:8191"
     networks: [default]
 
+  # Host networking, killswitch-bound to the VPN interface — see
+  # security/vpn-killswitch.md. The Web UI binds the LAN address, not
+  # loopback, so the healthcheck has to use ${LAN_IP}.
   qbittorrent:
-    # Bound to VPN interface on host — see security/vpn-killswitch.md
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     network_mode: host
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://${LAN_IP}:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -337,38 +389,42 @@ services:
     volumes:
       - ${APPDATA_DIR}/qbittorrent:/config
       - ${STORAGE_DIR}/data:/data
+      - ${MEDIA_DIR}:/mnt/media
 
+  # ffmpeg transcodes are one of the two big memory consumers (with
+  # Immich ML), hence the ceiling.
   tdarr:
     image: ghcr.io/haveagitgat/tdarr:latest
     container_name: tdarr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 2g
+    runtime: nvidia
     environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      - UMASK_SET=002
       - serverIP=0.0.0.0
       - serverPort=8266
       - webUIPort=8265
       - internalNode=true
       - inContainer=true
       - ffmpegVersion=7
+      - nodeName=docker-host
     volumes:
       - ${APPDATA_DIR}/tdarr/server:/app/server
       - ${APPDATA_DIR}/tdarr/configs:/app/configs
       - ${APPDATA_DIR}/tdarr/logs:/app/logs
       - ${STORAGE_DIR}/tdarr-cache:/temp
-      - ${MEDIA_DIR}:/media
+      - ${MEDIA_DIR}/movies:/media/movies
+      - ${MEDIA_DIR}/series:/media/series
+      - ${STORAGE_DIR}/series:/media/storage-series
     ports:
       - "${LAN_IP}:8265:8265"
       - "${LAN_IP}:8266:8266"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
     networks: [default]
 
   seerr:
@@ -376,6 +432,7 @@ services:
     container_name: seerr
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 512m
     environment:
       - TZ=${TZ}
     ports:
@@ -406,6 +463,8 @@ services:
   # smart-search + buffalo_l face detection. Storage template
   # (year/month/filename) and tuned concurrency are configured
   # via the Immich admin API after first boot — see docker/README.md.
+  # All four containers are updated by hand, together, to the version
+  # pinned in IMMICH_VERSION.
   immich-server:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
     container_name: immich_server
@@ -413,6 +472,9 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
+    # Ceilings, not reservations. Before they existed, an Immich ML burst
+    # plus an ffmpeg transcode starved the host and pushed it into swap.
+    mem_limit: 2g
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -426,6 +488,8 @@ services:
     depends_on: [immich-redis, immich-postgres]
     networks: [default]
 
+  # The largest single memory consumer: CUDA models are loaded into host
+  # RAM before they move to the GPU.
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}-cuda
     container_name: immich_machine_learning
@@ -433,6 +497,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
+    mem_limit: 3g
     runtime: nvidia
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
@@ -442,17 +507,26 @@ services:
       - ${APPDATA_DIR}/immich/model-cache:/cache
     networks: [default]
 
+  # Valkey, as in upstream Immich's own compose. No volume: this is the
+  # BullMQ job queue, so recreating it only drops queued jobs, never photos.
   immich-redis:
-    image: redis:6.2-alpine
+    image: valkey/valkey:9
     container_name: immich_redis
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks: [default]
 
+  # Pinned by digest, like upstream Immich's compose.
   immich-postgres:
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    # yamllint disable-line rule:line-length
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
     container_name: immich_postgres
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
@@ -470,13 +544,24 @@ services:
   # Three-container stack: app (apache), Postgres 16, Redis 7.
   # External storage at ${STORAGE_DIR}/Nextcloud is mounted read-write so users
   # can browse host-side directories (e.g. per-device backup folders) directly.
+  # App and database are updated together by hand: a new image usually needs
+  # `occ upgrade` and a check afterwards.
   nextcloud:
-    image: nextcloud:30-apache
+    image: nextcloud:34-apache
     container_name: nextcloud
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
+    # PHP_MEMORY_LIMIT applies per PHP process and Apache runs several
+    # workers, so the container ceiling has to sit well above 1G.
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1/status.php || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 180s
     environment:
       - POSTGRES_HOST=nextcloud-db
       - POSTGRES_DB=nextcloud
@@ -509,6 +594,12 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     environment:
       - POSTGRES_USER=nextcloud
       - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASS}
@@ -523,11 +614,21 @@ services:
     restart: always
     security_opt: [no-new-privileges:true]
     command: redis-server --requirepass ${NEXTCLOUD_REDIS_PASS}
+    environment:
+      - REDISCLI_AUTH=${NEXTCLOUD_REDIS_PASS}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     volumes:
       - ${APPDATA_DIR}/nextcloud-redis:/data
     networks: [default]
 
   # ── Network-wide DNS / ad-blocking ───────────────────────
+  # Host networking: the admin UI listens on the LAN address, so the
+  # healthcheck uses ${LAN_IP} rather than loopback.
   adguardhome:
     image: adguard/adguardhome
     container_name: adguardhome
@@ -536,11 +637,20 @@ services:
     restart: unless-stopped
     network_mode: host
     security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://${LAN_IP}:3000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     volumes:
       - ${APPDATA_DIR}/adguard/work:/opt/adguardhome/work
       - ${APPDATA_DIR}/adguard/conf:/opt/adguardhome/conf
 
-  # ── Security ─────────────────────────────────────────────
+  # ── Tunnel ingress ───────────────────────────────────────
+  # cloudflared has no network stack of its own: it joins the namespace of
+  # cloudflare-egress, a WARP client whose encrypted transport leaves through
+  # the host's Mullvad tunnel. See cloudflare-egress/README.md.
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
@@ -548,12 +658,54 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
-    command: tunnel --loglevel info run
+    command: tunnel --loglevel info --edge-ip-version 4 --protocol http2 --metrics 0.0.0.0:20241 run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-    networks: [default]
+    network_mode: service:cloudflare-egress
+    depends_on:
+      cloudflare-egress:
+        condition: service_healthy
+
+  # The only container with NET_ADMIN and /dev/net/tun. Nothing published.
+  cloudflare-egress:
+    image: cloudflare-egress:local
+    build: ./cloudflare-egress
+    container_name: cloudflare-egress
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cap_add: [NET_ADMIN]
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: '1'
+      net.ipv6.conf.default.disable_ipv6: '1'
+    volumes:
+      # WARP registration and private keys: keep this directory 0700 and
+      # out of version control.
+      - ${APPDATA_DIR}/cloudflare-egress:/var/lib/cloudflare-warp
+    healthcheck:
+      test: ["CMD", "/usr/local/sbin/healthcheck.sh"]
+      interval: 30s
+      timeout: 12s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    networks:
+      default:
+        aliases: [cloudflared]
 
   # ── Observability ────────────────────────────────────────
+  # Runs as root with host PID and host networking, so it gets no extra
+  # capabilities: SYS_PTRACE would allow reading every process's memory and
+  # NET_ADMIN would allow rewriting host routing (i.e. bypassing the VPN
+  # killswitch). CPU, memory, disk and network all come from /proc.
   glances:
     image: nicolargo/glances:latest-full
     container_name: glances
@@ -561,18 +713,21 @@ services:
     pid: host
     network_mode: host
     security_opt: [no-new-privileges:true]
-    cap_add: [SYS_PTRACE, NET_ADMIN]
+    mem_limit: 512m
     volumes:
       - /dev:/dev:ro
       - ${STORAGE_DIR}:/mnt/storage:ro
-      - ${MEDIA_DIR}:/mnt/media
+      - ${MEDIA_DIR}:/mnt/media:ro
     environment:
       - GLANCES_OPT=-w --bind ${LAN_IP}
       - DOCKER_HOST=tcp://127.0.0.1:2375
     depends_on: [docker-proxy]
 
+  # Reads SMART data — needs raw disk access (acceptable trade-off).
+  # Disks are addressed by /dev/disk/by-id so a reshuffled sdX name can
+  # never point SMART reads at the wrong drive. master-omnibus is a branch
+  # tag, not a release, so it is updated by hand after review.
   scrutiny:
-    # Reads SMART data — needs raw disk access (acceptable trade-off)
     image: ghcr.io/analogj/scrutiny:master-omnibus
     container_name: scrutiny
     labels:
@@ -587,27 +742,42 @@ services:
       - ${APPDATA_DIR}/scrutiny/config:/opt/scrutiny/config
       - ${APPDATA_DIR}/scrutiny/influxdb:/opt/scrutiny/influxdb
     devices:
-      - /dev/sda:/dev/sda
-      - /dev/sdb:/dev/sdb
-      - /dev/nvme0n1:/dev/nvme0n1
+      - ${SMART_DISK_1}:/dev/sdb
+      - ${SMART_DISK_2}:/dev/sdc
     networks: [default]
 
+  # HTTP checks for the web services. No published port:
+  # reached through the reverse proxy only.
+  uptime-kuma:
+    image: louislam/uptime-kuma:2@sha256:20abea8c48a163cf0a7a5d5936ab418e4b742d908704e1f58f6c06e56a9c6b67
+    container_name: uptime-kuma
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    volumes:
+      - ${APPDATA_DIR}/uptime-kuma:/app/data
+    networks: [default]
+
+  # Host networking so measurements see the host's real egress (the VPN).
+  # The bundled nginx site config is edited to listen on ${LAN_IP}:8765 only.
   speedtest:
     image: lscr.io/linuxserver/speedtest-tracker:latest
     container_name: speedtest
     restart: always
     security_opt: [no-new-privileges:true]
+    network_mode: host
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
       - SPEEDTEST_SCHEDULE=0 3 * * *
+      # Comma-separated Speedtest server IDs; empty lets the tool choose.
+      - SPEEDTEST_SERVERS=${SPEEDTEST_SERVERS:-}
       - APP_KEY=${SPEEDTEST_APP_KEY}
     volumes:
       - ${APPDATA_DIR}/speedtest/config:/config
-    ports:
-      - "${LAN_IP}:8765:80"
-    networks: [default]
 
   # ── Notifications & RSS ──────────────────────────────────
   ntfy:
@@ -634,10 +804,13 @@ services:
       - DATABASE_URL=postgres://miniflux:${MINIFLUX_DB_PASS}@miniflux-db/miniflux?sslmode=disable
       - RUN_MIGRATIONS=1
       - CREATE_ADMIN=1
-      - ADMIN_USERNAME=admin
+      - ADMIN_USERNAME=${MINIFLUX_ADMIN_USER:-admin}
       - ADMIN_PASSWORD=${MINIFLUX_ADMIN_PASS}
       - BASE_URL=https://miniflux.${DOMAIN}
       - TZ=${TZ}
+      # Some feeds rate-limit the shared VPN exit. Without this, Miniflux
+      # pauses a feed after three failed fetches and the start page goes empty.
+      - POLLING_PARSING_ERROR_LIMIT=0
     ports:
       - "${LAN_IP}:8070:8080"
     depends_on: [miniflux-db]
@@ -650,6 +823,12 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: always
     security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U miniflux -d miniflux || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     environment:
       - POSTGRES_USER=miniflux
       - POSTGRES_PASSWORD=${MINIFLUX_DB_PASS}
@@ -673,14 +852,17 @@ services:
     container_name: drawio
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 384m
+    volumes:
+      - ${APPDATA_DIR}/drawio:/usr/local/tomcat/webapps/draw/diagrams:ro
     ports:
       - "${LAN_IP}:8108:8080"
     networks: [default]
 
   # ── Observability (Prometheus + Grafana) ─────────────────
   # Scrapes node-exporter (host metrics), nvidia-gpu-exporter (GPU watts/temp)
-  # and cadvisor (per-container metrics). Scaphandre (RAPL power) was dropped
-  # 2026-07-04; host power is no longer collected.
+  # and cadvisor (per-container metrics). Host CPU/RAM power (Scaphandre) is
+  # not collected.
   # Grafana provisioning files live in `${APPDATA_DIR}/grafana/provisioning/`
   # — see `../monitoring/` in the repo for example configs and the dashboard.
   prometheus:
@@ -688,6 +870,7 @@ services:
     container_name: prometheus
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 1g
     user: "65534:65534"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -706,6 +889,7 @@ services:
     container_name: grafana
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 512m
     user: "472:472"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
@@ -741,8 +925,9 @@ services:
     pid: host
     networks: [default]
 
+  # Semver trap: 1.13.1 is newer than 1.3.2.
   nvidia-gpu-exporter:
-    image: utkuozdemir/nvidia_gpu_exporter:1.3.2
+    image: utkuozdemir/nvidia_gpu_exporter:1.13.1
     container_name: nvidia-gpu-exporter
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
@@ -751,11 +936,15 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
     networks: [default]
 
+  # gcr.io/cadvisor stopped receiving builds after v0.53.0, so its `latest`
+  # tag froze; upstream now publishes on ghcr.io. Docker containers only.
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: ghcr.io/google/cadvisor:v0.60.5
     container_name: cadvisor
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
+    mem_limit: 1536m
+    command: ["--docker_only=true"]
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -777,7 +966,8 @@ networks:
     internal: true
   # Read-only socket proxy. The proxy used to sit on the default network,
   # so any container could ask it for inspect data (including env vars) of
-  # every other container. Now only homepage, dozzle and diun are members.
+  # every other container. Now only homepage, dozzle, watchtower and diun
+  # are members.
   # Not `internal`: glances runs with network_mode: host and reaches the
   # proxy through the 127.0.0.1:2375 port mapping, which does not work on an
   # internal network.

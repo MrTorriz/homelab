@@ -1,31 +1,57 @@
+# ────────────────────────────────────────────────────────────
+# Glance — shared page list
+#
+# Included by both `glance.yml` and `glance.amber.yml` through `$include`;
+# only the theme differs between the two instances, so pages are edited
+# here and nowhere else.
+#
+# Reddit is read through Miniflux, not directly. Reddit rate-limits (HTTP
+# 429) the shared VPN exit, and Glance then renders an error box. Miniflux
+# polls the subreddit feeds on its own schedule and keeps the entries in
+# Postgres when a fetch fails, so Glance never sees a 429 — the worst case
+# is slightly stale content. The feed IDs below are Miniflux feed IDs; list
+# yours with:
+#   curl -H "X-Auth-Token: $MINIFLUX_API_TOKEN" http://miniflux:8080/v1/feeds
+#
+# Environment variables passed to the Glance containers:
+#   MINIFLUX_API_TOKEN  read-only Miniflux API token
+#   LAN_IP              host address, for the host-network services
+# ────────────────────────────────────────────────────────────
+
 - name: Tech
+  slug: tech
+  show-mobile-header: true
   columns:
     - size: small
       widgets:
-        - type: clock
-          hour-format: 24h
-          timezones:
-            - timezone: Europe/Stockholm
-              label: Local
-
-        - type: weather
-          location: Stockholm, Sweden
-          units: metric
-          hour-format: 24h
-
-        - type: reddit
+        - type: custom-api
           title: r/selfhosted
-          subreddit: selfhosted
-          show-thumbnails: false
-          limit: 5
-          collapse-after: 5
+          cache: 15m
+          url: http://miniflux:8080/v1/entries?feed_id=1&order=published_at&direction=desc&limit=8
+          headers:
+            X-Auth-Token: ${MINIFLUX_API_TOKEN}
+          template: &reddit-list |
+            <ul class="list list-gap-14 collapsible-container" data-collapse-after="5">
+              {{ range .JSON.Array "entries" }}
+              <li>
+                <a class="title size-title-dynamic color-primary-if-not-visited" href="{{ .String "url" }}" target="_blank" rel="noreferrer">{{ .String "title" }}</a>
+                <ul class="list-horizontal-text flex-nowrap">
+                  <li {{ .String "published_at" | parseRelativeTime "rfc3339" }}></li>
+                  <li class="min-width-0">
+                    <a class="block text-truncate" href="{{ .String "feed.site_url" }}" target="_blank" rel="noreferrer">{{ .String "feed.title" }}</a>
+                  </li>
+                </ul>
+              </li>
+              {{ end }}
+            </ul>
 
-        - type: reddit
+        - type: custom-api
           title: r/homelab
-          subreddit: homelab
-          show-thumbnails: false
-          limit: 5
-          collapse-after: 5
+          cache: 15m
+          url: http://miniflux:8080/v1/entries?feed_id=2&order=published_at&direction=desc&limit=8
+          headers:
+            X-Auth-Token: ${MINIFLUX_API_TOKEN}
+          template: *reddit-list
 
     - size: full
       widgets:
@@ -34,18 +60,24 @@
           limit: 12
           collapse-after: 6
           feeds:
-            - url: https://example.com/rss/tech
-              name: Example Tech
+            - url: https://feeds.arstechnica.com/arstechnica/technology-lab
+              title: Ars Technica
+            - url: https://www.theverge.com/rss/index.xml
+              title: The Verge
             - url: https://news.ycombinator.com/rss
-              name: Hacker News
+              title: Hacker News
 
         - type: rss
           title: Linux & Homelab
           limit: 10
           collapse-after: 5
           feeds:
-            - url: https://example.com/rss/linux
-              name: Example Linux
+            - url: https://www.phoronix.com/rss.php
+              title: Phoronix
+            - url: https://linuxiac.com/feed/
+              title: Linuxiac
+            - url: https://www.omgubuntu.co.uk/feed
+              title: OMG Ubuntu
 
     - size: small
       widgets:
@@ -53,77 +85,92 @@
           limit: 8
           collapse-after: 5
 
-        - type: reddit
+        - type: custom-api
           title: r/linux
-          subreddit: linux
-          show-thumbnails: false
-          limit: 5
-          collapse-after: 5
+          cache: 15m
+          url: http://miniflux:8080/v1/entries?feed_id=3&order=published_at&direction=desc&limit=8
+          headers:
+            X-Auth-Token: ${MINIFLUX_API_TOKEN}
+          template: *reddit-list
 
 - name: News
+  slug: news
+  show-mobile-header: true
   columns:
     - size: small
       widgets:
-        - type: clock
-          hour-format: 24h
-          timezones:
-            - timezone: Europe/Stockholm
-              label: Local
-
-        - type: weather
-          location: Stockholm, Sweden
-          units: metric
-          hour-format: 24h
-
-        - type: reddit
+        - type: custom-api
           title: r/worldnews
-          subreddit: worldnews
-          show-thumbnails: false
-          limit: 8
-          collapse-after: 8
+          cache: 15m
+          url: http://miniflux:8080/v1/entries?feed_id=4&order=published_at&direction=desc&limit=10
+          headers:
+            X-Auth-Token: ${MINIFLUX_API_TOKEN}
+          template: *reddit-list
 
     - size: full
       widgets:
         - type: rss
-          title: World News
+          title: World
           limit: 15
           collapse-after: 8
           feeds:
             - url: https://feeds.bbci.co.uk/news/world/rss.xml
-              name: BBC World
+              title: BBC World
+            - url: https://www.theguardian.com/world/rss
+              title: Guardian World
 
     - size: small
       widgets:
         - type: rss
-          title: Tech News
+          title: Technology
           limit: 12
           collapse-after: 8
           feeds:
             - url: https://feeds.bbci.co.uk/news/technology/rss.xml
-              name: BBC Tech
+              title: BBC Tech
 
-- name: Finance
+- name: Movies & TV
+  slug: movies-tv
+  show-mobile-header: true
   columns:
     - size: small
       widgets:
-        - type: clock
-          hour-format: 24h
-          timezones:
-            - timezone: Europe/Stockholm
-              label: Local
-
-        - type: calendar
+        - type: custom-api
+          title: r/movies
+          cache: 15m
+          url: http://miniflux:8080/v1/entries?feed_id=5&order=published_at&direction=desc&limit=8
+          headers:
+            X-Auth-Token: ${MINIFLUX_API_TOKEN}
+          template: *reddit-list
 
     - size: full
       widgets:
         - type: rss
-          title: Business & Markets
+          title: Film & series
           limit: 15
           collapse-after: 8
           feeds:
-            - url: https://feeds.bbci.co.uk/news/business/rss.xml
-              name: BBC Business
+            - url: https://www.slashfilm.com/feed/
+              title: SlashFilm
+            - url: https://variety.com/feed/
+              title: Variety
+            - url: https://deadline.com/feed/
+              title: Deadline
 
+    - size: small
+      widgets:
+        - type: custom-api
+          title: r/television
+          cache: 15m
+          url: http://miniflux:8080/v1/entries?feed_id=6&order=published_at&direction=desc&limit=8
+          headers:
+            X-Auth-Token: ${MINIFLUX_API_TOKEN}
+          template: *reddit-list
+
+- name: Finance
+  slug: finance
+  show-mobile-header: true
+  columns:
     - size: small
       widgets:
         - type: markets
@@ -137,73 +184,171 @@
             - symbol: GC=F
               name: Gold
 
+    - size: full
+      widgets:
+        - type: rss
+          title: Business & markets
+          limit: 20
+          collapse-after: 10
+          feeds:
+            - url: https://feeds.bbci.co.uk/news/business/rss.xml
+              title: BBC Business
+            - url: https://feeds.bloomberg.com/markets/news.rss
+              title: Bloomberg Markets
+            - url: https://www.cnbc.com/id/100003114/device/rss/rss.html
+              title: CNBC Business
+
+    - size: small
+      widgets:
+        - type: calendar
+
 - name: Server
+  slug: server
+  show-mobile-header: true
   columns:
     - size: small
       widgets:
-        - type: clock
-          hour-format: 24h
-          timezones:
-            - timezone: Europe/Stockholm
-              label: Local
-
+        # Internal checks have no rate limit, so a short cache keeps a down
+        # service from going unreported for long. Container names resolve on
+        # the shared Docker network; host-network services use the LAN address.
         - type: monitor
           cache: 5m
-          title: Services
+          title: Infrastructure
           sites:
-            - title: Jellyfin
-              url: http://homelab.local:8096
-              icon: si:jellyfin
-            - title: Sonarr
-              url: http://homelab.local:8989
-              icon: si:sonarr
-            - title: Radarr
-              url: http://homelab.local:7878
-              icon: si:radarr
-            - title: AdGuard
-              url: http://homelab.local:3000
+            - title: NPM
+              url: http://npm:81
+              icon: sh:nginx-proxy-manager
+            - title: AdGuard Home
+              url: http://${LAN_IP}:3000
               icon: si:adguard
-            - title: Immich
-              url: http://homelab.local:2283
-              icon: si:immich
             - title: Portainer
-              url: http://homelab.local:9000
+              url: http://portainer:9000
               icon: si:portainer
-            - title: Homepage
-              url: http://homelab.local:3000
+            - title: Dozzle
+              url: http://dozzle:8080
+              icon: sh:dozzle
+            - title: Grafana
+              url: http://grafana:3000
+              icon: si:grafana
+            - title: Prometheus
+              url: http://prometheus:9090
+              icon: si:prometheus
+            - title: Scrutiny
+              url: http://scrutiny:8080
+              icon: sh:scrutiny
+            - title: Glances
+              url: http://${LAN_IP}:61208
+              icon: sh:glances
+            # The router answers 301 → HTTPS with a self-signed certificate;
+            # without allow-insecure it would always show as down.
+            - title: Gateway
+              url: https://router.example.com
+              icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/router.svg
+              allow-insecure: true
+              alt-status-codes:
+                - 301
+                - 302
+                - 401
 
     - size: full
       widgets:
-        - type: releases
-          title: Container updates
-          collapse-after: 8
-          repositories:
-            - immich-app/immich
-            - linuxserver/docker-sonarr
-            - linuxserver/docker-radarr
-            - linuxserver/docker-bazarr
-            - linuxserver/docker-prowlarr
-            - linuxserver/docker-qbittorrent
-            - linuxserver/docker-jellyfin
-            - gethomepage/homepage
-            - glanceapp/glance
-            - nicolargo/glances
-            - nicholas-fedor/watchtower
+        - type: split-column
+          max-columns: 2
+          widgets:
+            - type: monitor
+              cache: 5m
+              title: Media
+              sites:
+                - title: Jellyfin
+                  url: http://jellyfin:8096
+                  icon: si:jellyfin
+                - title: Seerr
+                  url: http://seerr:5055
+                  icon: sh:jellyseerr
+                - title: Sonarr
+                  url: http://sonarr:8989
+                  icon: si:sonarr
+                - title: Radarr
+                  url: http://radarr:7878
+                  icon: si:radarr
+                - title: Lidarr
+                  url: http://lidarr:8686
+                  icon: sh:lidarr
+                - title: Bazarr
+                  url: http://bazarr:6767
+                  icon: sh:bazarr
+                - title: Prowlarr
+                  url: http://prowlarr:9696
+                  icon: sh:prowlarr
+                - title: qBittorrent
+                  url: http://${LAN_IP}:8080
+                  icon: si:qbittorrent
+                - title: Tdarr
+                  url: http://tdarr:8265
+                  icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/tdarr.png
 
-        - type: releases
-          title: Tools & Security
-          collapse-after: 5
-          repositories:
-            - portainer/portainer
-            - amir20/dozzle
-            - NginxProxyManager/nginx-proxy-manager
-            - HaveAGitGat/Tdarr
+            - type: monitor
+              cache: 5m
+              title: Cloud & tools
+              sites:
+                - title: Immich
+                  url: http://immich_server:2283
+                  icon: si:immich
+                - title: Nextcloud
+                  url: http://nextcloud:80
+                  icon: si:nextcloud
+                - title: Audiobookshelf
+                  url: http://audiobookshelf:80
+                  icon: sh:audiobookshelf
+                - title: Miniflux
+                  url: http://miniflux:8080
+                  icon: sh:miniflux
+                - title: Homepage
+                  url: http://homepage:3000
+                  icon: sh:homepage
+                  alt-status-codes:
+                    - 400
+                - title: Draw.io
+                  url: http://drawio:8080
+                  icon: sh:draw-io
+                - title: IT-Tools
+                  url: http://it-tools:80
+                  icon: sh:it-tools
+                - title: ntfy
+                  url: http://ntfy:80
+                  icon: sh:ntfy
+                - title: FlareSolverr
+                  url: http://flaresolverr:8191
+                  icon: sh:flaresolverr
 
-    - size: small
-      widgets:
         - type: bookmarks
+          title: Shortcuts
           groups:
-            - title: Docker
+            - title: Operations
+              links:
+                - title: Portainer
+                  url: https://portainer.example.com
+                - title: Dozzle
+                  url: https://dozzle.example.com
+                - title: Grafana
+                  url: https://grafana.example.com
+                - title: Scrutiny
+                  url: https://scrutiny.example.com
+                - title: Uptime Kuma
+                  url: https://uptime.example.com
+
+            - title: Media
+              links:
+                - title: Jellyfin
+                  url: https://jellyfin.example.com
+                - title: Seerr
+                  url: https://seerr.example.com
+                - title: Immich
+                  url: https://immich.example.com
+                - title: Nextcloud
+                  url: https://cloud.example.com
+
+            - title: Reference
               links:
                 - title: Docker Hub
                   url: https://hub.docker.com

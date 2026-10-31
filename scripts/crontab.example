@@ -25,8 +25,11 @@
 # Scrutiny SMART metrics — collect from inside container hourly
 0 * * * *       docker exec scrutiny scrutiny-collector-metrics run
 
-# Mullvad rotation — pick a new exit relay every 6h
-30 */6 * * *    $HOME/scripts/mullvad-rotate.sh
+# VPN watchdog — repair a dead tunnel or broken public path, never leaving Mullvad
+7,22,37,52 * * * *  $HOME/scripts/vpn-watchdog.sh
+
+# Kill-switch proof — host and torrent client both exit via Mullvad
+*/30 * * * *    $HOME/scripts/vpn-killswitch-check.sh
 
 # Daily — log hygiene at 02:00 (journal, suricata, rclone)
 0 2 * * *       $HOME/scripts/maintenance/syslog-cleaner.sh

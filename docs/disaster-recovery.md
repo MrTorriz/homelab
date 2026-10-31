@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-What happens if the host dies tonight. RTO/RPO targets, backup strategy, and the actual recovery procedure — not theory.
+What happens if the host dies tonight. RTO/RPO targets, backup strategy, the recovery procedure, and which parts of it have actually been tested.
 
 ---
 
@@ -11,9 +11,7 @@ What happens if the host dies tonight. RTO/RPO targets, backup strategy, and the
 | **RTO** (Recovery Time Objective) | < 4 hours | Time from "host is dead" to "all services up on a replacement" |
 | **RPO** (Recovery Point Objective) | < 24 hours | Maximum acceptable data loss (since last backup) |
 
-These are targets for a single-host homelab — not tested SLAs. The constraint is that backup runs once daily at 04:00 UTC.
-
-> **Last full restore:** the June 2026 move from bare metal into a Proxmox VM ([proxmox-homelab/docs/migration.md](https://github.com/MrTorriz/proxmox-homelab/blob/main/docs/migration.md)) was, in effect, a Scenario C restore from the appdata backup. No dry-run restore has been performed since (as of 2026-08-28).
+These are targets for a single-host homelab, not SLAs. The constraint is that the appdata backup runs once daily at 04:00 UTC.
 
 For data that can't tolerate 24 h loss (Nextcloud documents being actively edited, Immich photos taken today), the practical RPO is closer to "since the last sync from the source device" because the device itself still has the original.
 
@@ -25,27 +23,43 @@ Three copies, two media, one off-site.
 
 | Copy | Where | When | Script |
 |---|---|---|---|
-| **Live** | Host SSD + spinning disks | Continuous | n/a |
-| **Local snapshot** | External disk on the host | Daily 04:00 | [`scripts/backup/backup-appdata.sh`](../scripts/backup/backup-appdata.sh) |
-| **Off-site** | Encrypted rclone push to remote | Daily 04:30 | [`scripts/backup/offsite-backup.sh`](../scripts/backup/offsite-backup.sh) |
-| **Verification** | Restore-test on Mondays | Weekly 07:00 | [`scripts/backup/backup-verify.sh`](../scripts/backup/backup-verify.sh) |
+| **Live** | Host NVMe + data HDDs | Continuous | n/a |
+| **Local archive** | Storage HDD, separate from the system disk | Daily 04:00 UTC | [`scripts/backup/backup-appdata.sh`](../scripts/backup/backup-appdata.sh) |
+| **Off-site, encrypted** | rclone crypt to cloud storage | Daily 04:30 UTC | [`scripts/backup/offsite-backup.sh`](../scripts/backup/offsite-backup.sh) |
+| **Off-site system archive** | rclone crypt to cloud storage | Weekly | live-only |
+| **Verification** | Integrity and freshness checks | Weekly, Monday 07:00 UTC | [`scripts/backup/backup-verify.sh`](../scripts/backup/backup-verify.sh) |
 
-The verification job is what makes this real. Untested backups are a guess. The weekly verify mounts a sample of the off-site archive and confirms checksums — if it fails, ntfy fires.
+The published scripts are simplified versions of the live ones. The live backup takes **six database dumps first** (Postgres for Immich, Nextcloud and Miniflux; SQLite for the services that use it), checks every dump and the finished archive before it is published, and aborts loudly instead of shipping a partial archive. A missing success is treated like a failure: the healthcheck alerts if an off-site job has not completed for more than 36 hours.
 
 ### What's in the backup
 
-- All container appdata (`${APPDATA_DIR}/*`) — config, databases, state
-- Compose files and `.env` (encrypted)
-- System config: `/etc/ufw`, `/etc/fail2ban`, `/etc/ssh`, crontabs
-- The private counterpart of this repo (live compose, scripts, `/etc`) — but that also lives on GitHub
+- All container appdata (`${APPDATA_DIR}/*`) — config and state, with live database directories excluded in favour of their dumps
+- Compose files and `.env` files (encrypted off-site)
+- The VPN client's own state, so a restored host keeps its device identity
+- The system itself, weekly: root, `/boot` and EFI filesystems plus the installed package list
 
 ### What's NOT backed up
 
-- Media files (`${MEDIA_DIR}`) — replaceable, too large to off-site economically
-- Bulk storage (`${STORAGE_DIR}/*` excluding Nextcloud user data) — case-by-case
-- Container images — pulled fresh from registries on restore
+- Media files (`${MEDIA_DIR}`) — replaceable, too large to copy off-site economically
+- Bulk downloads and transcoder cache on `${STORAGE_DIR}`
+- Container images — pulled fresh from registries on restore (the self-built sidecar is rebuilt from its Dockerfile)
 
-The Nextcloud `External Storage` mount of `${STORAGE_DIR}/Nextcloud/{laptop,iphone,server}` *is* backed up — that's user data, not media.
+Nextcloud user data under `${STORAGE_DIR}/Nextcloud/` and the Immich library *are* user data and are covered.
+
+---
+
+## Restore tests
+
+Untested backups are a guess. What has actually been restored:
+
+| Date | Test | Result |
+|---|---|---|
+| 2026-08-29 | ntfy pulled from the encrypted off-site copy, started in a throwaway container against the restored data | `integrity_check` ok, all users present, config identical, health endpoint `200`, anonymous publish `403` |
+| 2026-09-09 | Full cold copy of the system disk downloaded back from encrypted off-site storage | All files decrypted and compared, zero differences |
+| 2026-09-13 | The move from VM to bare metal — a block-level restore of the system disk onto the physical SSD | Full SSD read-back matched the source hash; all containers healthy after first boot |
+| 2026-10-11 | All six database dumps from the nightly archive restored into isolated instances and read back | All six restored; production and data disks untouched; test copies removed afterwards |
+
+Still open: a full application-level restore drill from the appdata archive onto a clean install, and a restore test of the weekly system archive.
 
 ---
 
@@ -57,55 +71,49 @@ The Nextcloud `External Storage` mount of `${STORAGE_DIR}/Nextcloud/{laptop,ipho
 
 ```bash
 # Stop the bad container
-cd ${COMPOSE_DIR} && docker compose stop ${SERVICE}
+cd "${COMPOSE_DIR}" && docker compose stop "${SERVICE}"
 
-# Restore its appdata from yesterday's snapshot
-rsync -a --delete ${BACKUP_DIR}/$(date -d yesterday +%F)/${SERVICE}/ \
-                  ${APPDATA_DIR}/${SERVICE}/
+# Restore its appdata from last night's archive
+tar -xzf "${BACKUP_DIR}/appdata_backup_$(date +%F).tar.gz" \
+    -C /tmp/restore "appdata/${SERVICE}"
+rsync -a --delete "/tmp/restore/appdata/${SERVICE}/" "${APPDATA_DIR}/${SERVICE}/"
 
 # Bring it back up
-docker compose up -d ${SERVICE}
+docker compose up -d "${SERVICE}"
 ```
+
+For a database-backed service, start its database container empty and load the dump instead of copying a data directory.
 
 RTO: 5–10 minutes per service.
 
-### Scenario B — Host filesystem corrupted (data disks intact)
+### Scenario B — System disk lost, data disks intact
 
-**Likelihood:** Uncommon but plausible (failed update, ZFS corruption, fs bug).
+**Likelihood:** Uncommon but plausible (failed SSD, failed update).
 
-1. Boot from rescue media or fresh Ubuntu install on a spare SSD
-2. Re-run the bootstrap from this repo:
-
-   ```bash
-   git clone https://github.com/MrTorriz/homelab.git ~/homelab
-   cd ~/homelab
-   sudo bash security/ufw-baseline.sh
-   sudo cp security/fail2ban/jail.local /etc/fail2ban/jail.local && sudo cp security/fail2ban/action.d/ntfy.conf /etc/fail2ban/action.d/
-   ```
-
-3. Mount the data disks (they're untouched)
-4. Restore appdata from latest snapshot
-5. Bring stack up: `cd docker && docker compose up -d`
+1. Install Ubuntu 24.04 on a replacement SSD, or restore the weekly system archive onto it
+2. Identify the data disks by serial number and filesystem UUID — never by `sdX` letter — and mount them; never format or repartition them
+3. Apply the security baseline from this repo (`security/ufw-baseline.sh`, fail2ban jail, SSH config, sysctl)
+4. Restore the VPN client state, bring the tunnel up in lockdown mode and verify both exits **before** any download client starts
+5. Restore `${APPDATA_DIR}` from the latest archive, excluding database directories
+6. Start the database containers empty, load the dumps, then start the rest: `cd docker && docker compose up -d`
 
 RTO: 2–3 hours.
 
 ### Scenario C — Total host loss (fire/theft/flood)
 
-**Likelihood:** Rare but the reason off-site backup exists.
+**Likelihood:** Rare, but the reason off-site backup exists.
 
 1. New hardware, fresh Ubuntu 24.04 install
 2. Pull this repo
-3. Pull encrypted off-site backup via rclone
-4. Decrypt with the rclone passphrase (stored in a password manager + printed in a fireproof safe — *not* on the host)
-5. Apply security baseline
-6. Restore appdata
-7. Bring stack up
-8. Reattach to Cloudflare Tunnel (existing tunnel token still valid, just point at new host)
-9. Update AdGuard DNS-rewrites if LAN IP changed
+3. Pull the encrypted off-site backup via rclone
+4. Decrypt with the rclone crypt keys (stored in a password manager and on paper — *not* on the host)
+5. Continue as Scenario B from step 3
+6. Reattach to the Cloudflare Tunnel (the token is in the restored `.env`; the tunnel can be recreated from the Cloudflare dashboard)
+7. Update AdGuard DNS rewrites if the LAN IP changed
 
 RTO: 4–8 hours assuming hardware is on hand. Add hardware-procurement time otherwise.
 
-Media is a separate question — `${MEDIA_DIR}` content (media library) would have to be re-acquired or restored from a separate cold backup if one exists. The recovery target above does **not** include media restoration; the homelab is functionally up without it.
+Media is a separate question — `${MEDIA_DIR}` content would have to be re-acquired. The recovery target above does **not** include media restoration; the homelab is functionally up without it.
 
 ### Scenario D — Ransomware on the host
 
@@ -114,7 +122,7 @@ Media is a separate question — `${MEDIA_DIR}` content (media library) would ha
 1. Power off immediately. Do not reboot.
 2. Boot rescue media. Confirm extent of encryption.
 3. Treat as Scenario B or C — do **not** restore from the most recent backup if the encryption may have run before backup time.
-4. Restore from a verified-clean older snapshot (the weekly `backup-verify.sh` log tells you which is last-known-good).
+4. Restore from a verified-clean older archive (the weekly `backup-verify.sh` log tells you which is last-known-good).
 5. Audit how it got in before bringing services back online.
 
 RTO: 6–24 hours including forensics.
@@ -123,17 +131,18 @@ RTO: 6–24 hours including forensics.
 
 ## Recovery checklist (for the 03:00 case)
 
-Print this out. Keep it with the off-site backup credentials.
+Print this out. Keep it with the off-site backup keys.
 
 - [ ] Identify failure mode (which scenario above)
 - [ ] If A or B: don't reboot anything else until you've understood scope
 - [ ] Pull latest off-site backup metadata to verify it's recent
 - [ ] If new hardware: install Ubuntu 24.04, set static LAN IP
+- [ ] Identify data disks by serial/UUID; mount, never format
 - [ ] Clone this repo
 - [ ] Restore `.env` files (encrypted, from off-site)
-- [ ] Mount `${MEDIA_DIR}` and `${STORAGE_DIR}` (existing or fresh)
-- [ ] Restore `${APPDATA_DIR}` from latest verified snapshot
-- [ ] Apply security baseline (`ufw-baseline.sh`, `cp security/fail2ban/jail.local /etc/fail2ban/`, SSH config)
+- [ ] Apply security baseline (`ufw-baseline.sh`, fail2ban jail, SSH config, sysctl)
+- [ ] VPN up in lockdown mode; `vpn-killswitch-check.sh` passes
+- [ ] Restore `${APPDATA_DIR}`; load database dumps into empty databases
 - [ ] `docker compose up -d`
 - [ ] Verify all containers reach healthy state
 - [ ] Test external access via Cloudflare Tunnel
@@ -147,22 +156,22 @@ Print this out. Keep it with the off-site backup credentials.
 
 | Secret | Where it's stored | Why outside the host |
 |---|---|---|
-| Rclone encryption passphrase | Password manager + paper in fireproof safe | Without it, the off-site backup is useless |
+| rclone crypt keys | Password manager + paper | Without them, the off-site backup is useless |
 | Cloudflare Tunnel token | Cloudflare dashboard (account survives) | Recreated on demand if needed |
 | Domain registrar credentials | Password manager | Needed to reissue certs if NPM state is lost |
-| GitHub deploy keys | Regenerable from GitHub | New key on new host |
+| VPN account | Password manager | The account number is all that is needed to sign in again |
 
-A backup is only as good as the secrets needed to use it. The single most important off-site item is the rclone passphrase — guard it accordingly.
+A backup is only as good as the secrets needed to use it. The single most important off-site item is the rclone crypt keys — guard them accordingly.
 
 ---
 
 ## Testing the plan
 
-The weekly `backup-verify.sh` is one half. The other half is doing a **dry-run restore to a VM** every 6 months:
+The weekly `backup-verify.sh` is one half. The other half is restoring for real, on something that is not production:
 
-1. Spin up a fresh Ubuntu VM
-2. Walk Scenario C end-to-end against it
+1. Restore into isolated containers or a throwaway machine, never over the live data
+2. Walk the relevant scenario end-to-end
 3. Time it
 4. Note what was missing or unclear in this doc — update
 
-This is the part most homelabs skip. It's also the part that makes the difference at 03:00. Status 2026-08-28: the June migration counts as the last end-to-end run; the six-month dry-run is due.
+This is the part most homelabs skip, and it is where this one found its worst gaps: a restore guide pointing at an archive format that was no longer produced, and VPN state that was not backed up at all ([lessons learned](lessons-learned.md#backups-that-had-never-been-restored)).

@@ -1,41 +1,66 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────
-# vpn-killswitch-check.sh — verify torrent client really cannot
-# reach the internet outside of the WireGuard tunnel.
+# vpn-killswitch-check.sh — prove that nothing leaves outside Mullvad.
 #
-# 1. Ask the host its public IP via the VPN interface (must
-#    return a Mullvad exit, not the ISP IP).
-# 2. Compare against the host's WAN IP — they MUST differ.
-# 3. Check that the torrent process is bound to wg0.
+# The whole host runs Mullvad in lockdown mode, so the useful test is
+# not "does the VPN IP differ from the WAN IP" but "does an outside
+# observer see a Mullvad exit, from the host AND from inside the
+# torrent client's container".
+#
+#   1. Lockdown mode is on (if the mullvad CLI is present).
+#   2. The host's exit is a Mullvad exit.
+#   3. qBittorrent's exit, asked from inside its container, is a Mullvad exit.
+#   4. qBittorrent is still pinned to the WireGuard interface.
+#   5. No IPv6 route exists that could bypass the tunnel.
+#
+# No answer is not proof of a leak: with lockdown on and the tunnel
+# down, nothing gets out at all. That is reported separately (exit 4).
 # ─────────────────────────────────────────────────────────────
 set -euo pipefail
 
 VPN_IFACE="${VPN_IFACE:-wg0-mullvad}"
-TORRENT_PROCESS="${TORRENT_PROCESS:-qbittorrent-nox}"
+TORRENT_CONTAINER="${TORRENT_CONTAINER:-qbittorrent}"
+TORRENT_CONF="${TORRENT_CONF:-/config/qBittorrent/qBittorrent.conf}"
+CHECK_URL="https://am.i.mullvad.net/json"
+MULLVAD_MARKER='"mullvad_exit_ip":true'
 
-vpn_ip=$(curl -sf --interface "$VPN_IFACE" --max-time 8 https://am.i.mullvad.net/ip)
-wan_ip=$(curl -sf --max-time 8 https://api.ipify.org)
+fail() { echo "FAIL: $*"; exit "${2:-1}"; }
 
-if [[ -z "$vpn_ip" || -z "$wan_ip" ]]; then
-  echo "FAIL: could not determine IPs (vpn=$vpn_ip wan=$wan_ip)"
-  exit 1
+# Retry: a single dropped request to the check service is not an incident.
+probe() {
+  local out=""
+  for _ in 1 2 3; do
+    out=$("$@" 2>/dev/null || true)
+    [[ -n "$out" ]] && break
+    sleep 5
+  done
+  printf '%s' "$out"
+}
+
+# 1. Lockdown mode
+if command -v mullvad >/dev/null 2>&1; then
+  mullvad lockdown-mode get | grep -q ': on' || fail "lockdown mode is off"
 fi
 
-if [[ "$vpn_ip" == "$wan_ip" ]]; then
-  echo "FAIL: VPN IP equals WAN IP — killswitch is not protecting you"
-  exit 2
+# 2. Host exit
+host_json=$(probe curl -sf --max-time 10 "$CHECK_URL")
+[[ -n "$host_json" ]] || fail "host: no answer from check service (tunnel down?)" 4
+[[ "$host_json" == *"$MULLVAD_MARKER"* ]] || fail "host: exit is NOT Mullvad" 2
+
+# 3. Torrent client exit, from inside its own network view
+if docker inspect -f '{{.State.Running}}' "$TORRENT_CONTAINER" 2>/dev/null | grep -q true; then
+  qbit_json=$(probe docker exec "$TORRENT_CONTAINER" wget -qO- --timeout=10 "$CHECK_URL")
+  [[ -n "$qbit_json" ]] || fail "$TORRENT_CONTAINER: no answer from check service" 4
+  [[ "$qbit_json" == *"$MULLVAD_MARKER"* ]] || fail "$TORRENT_CONTAINER: exit is NOT Mullvad" 2
+
+  # 4. Interface binding survives client updates and config resets
+  docker exec "$TORRENT_CONTAINER" grep -q "Interface=${VPN_IFACE}" "$TORRENT_CONF" \
+    || fail "$TORRENT_CONTAINER is no longer bound to ${VPN_IFACE}" 3
+else
+  echo "WARN: $TORRENT_CONTAINER not running — skipped container checks"
 fi
 
-if ! ss -tnp 2>/dev/null | grep -q "$TORRENT_PROCESS"; then
-  echo "WARN: $TORRENT_PROCESS not running"
-  exit 0
-fi
+# 5. IPv6 must not offer a way around the tunnel
+[[ -z "$(ip -6 route show 2>/dev/null)" ]] || fail "IPv6 routes present" 3
 
-# Verify the torrent process's outbound sockets all bind to the VPN interface
-if ss -tnp | awk -v p="$TORRENT_PROCESS" '$0 ~ p {print $4}' \
-     | grep -vqE "^${vpn_ip}:"; then
-  echo "FAIL: $TORRENT_PROCESS has sockets outside the VPN interface"
-  exit 3
-fi
-
-echo "OK: torrent traffic confined to $VPN_IFACE ($vpn_ip), WAN is $wan_ip"
+echo "OK: host and ${TORRENT_CONTAINER} both exit via Mullvad; lockdown on; bound to ${VPN_IFACE}; no IPv6 routes"
