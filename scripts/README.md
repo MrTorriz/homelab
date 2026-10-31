@@ -44,7 +44,7 @@ Each subdirectory holds standalone scripts that source `../lib.sh`. Read the hea
 `motd/server-status.sh` is what every SSH login lands on — a live snapshot of containers, load, temps and disk so you don't need a second command to see if the box is happy:
 
 <p align="center">
-  <img src="../docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="780"/>
+  <img src="../docs/img/server-motd.gif" alt="MOTD banner with live system stats on SSH login" width="590"/>
   <br/>
   <sub>Fixed snapshot of a real login on 2026-10-31 (<code>scripts/demo/server-motd-demo.sh</code>) — same layout, glyphs, palette and values as the live banner.</sub>
 </p>

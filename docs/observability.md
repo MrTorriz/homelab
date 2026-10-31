@@ -80,7 +80,7 @@ No sidecar pre-aggregates anything — Homepage talks to Prometheus, Prometheus 
 The metrics layer answers "what is happening?". The events layer answers "what *just happened* that I need to know about *right now*?".
 
 <p align="center">
-  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, proxy scan, file-watcher" width="780"/>
+  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, proxy scan, file-watcher" width="700"/>
   <br/>
   <sub>Synthetic demo (<code>scripts/demo/</code>); sources are placeholders.</sub>
 </p>
