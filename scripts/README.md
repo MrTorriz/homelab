@@ -5,8 +5,8 @@ Small bash utilities that keep the homelab honest. All source `lib.sh` for share
 | Script | Purpose | Schedule |
 |---|---|---|
 | `healthcheck.sh` | Verify containers, VPN, external hostnames, disk usage | every 15 min |
-| `vpn-killswitch-check.sh` | Confirm torrent traffic is confined to the VPN interface | every 30 min |
-| `mullvad-rotate.sh` | Rotate Mullvad exit IP through a country list | every 6 hours |
+| `vpn-killswitch-check.sh` | Prove the host and the torrent client both exit via Mullvad, lockdown is on and no IPv6 route exists | every 30 min |
+| `vpn-watchdog.sh` | Reconnect a tunnel that passes no traffic; repair the Cloudflare path without leaving the VPN | every 15 min |
 | `lib.sh` | Shared functions (`ntfy_send`, `ntfy_url`, `log_rotate`) | sourced |
 
 ## What it looks like
@@ -18,12 +18,12 @@ is touched). Render an animated version with `vhs scripts/demo/<name>.tape`.
 
 ```text
 [healthcheck] starting periodic check
-[1/4] containers running ............. OK (44/44 expected)
-[2/4] VPN reality-check (Mullvad) ..... OK — connected via a Swedish relay
+[1/4] containers running ............. OK (46/46 expected)
+[2/4] VPN reality-check (Mullvad) ..... OK — host and torrent exits are Mullvad
 [3/4] external hostnames ............. OK (homepage, npm, jellyfin, immich, adguard, ntfy)
-[4/4] disk usage thresholds ........... OK (/ 29%, /mnt/media 90%, /mnt/storage 73%)
+[4/4] disk usage thresholds ........... OK (/ 77%, /mnt/media 91%, /mnt/storage 76%)
 
-[ntfy] homelab-alerts: all 44 containers healthy — VPN locked, disks nominal
+[ntfy] homelab-alerts: all 46 containers healthy — VPN locked, disks nominal
 exit 0 — next run in 15 min
 ```
 
@@ -65,7 +65,7 @@ A complete example with comments lives in [`crontab.example`](crontab.example). 
 ```cron
 */15 *  * * *   $HOME/scripts/healthcheck.sh
 */30 *  * * *   $HOME/scripts/vpn-killswitch-check.sh
-0    */6 * * *  $HOME/scripts/mullvad-rotate.sh
+7,22,37,52 * * * *  $HOME/scripts/vpn-watchdog.sh
 ```
 
 ## Why bash and not Python/Go

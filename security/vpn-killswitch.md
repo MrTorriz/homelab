@@ -1,72 +1,76 @@
-# VPN killswitch for torrent traffic
+# VPN killswitch
 
-The torrent client must never make a request that egresses through the ISP. This document is the recipe and the verification steps.
+Nothing on this host may reach the internet outside the VPN — not the torrent client, not a container that restarts at the wrong moment, not the host itself. This document is the recipe and the verification steps.
 
 ## What we're protecting against
 
 - ISP traffic shaping or letters
-- Accidental leak when the VPN drops
-- DNS leaks from inside the torrent client
-- The torrent client crashing, restarting, and racing the VPN's reconnect
+- Accidental leak when the VPN drops or reconnects
+- DNS leaks, from the host or from inside a container
+- A service crashing, restarting, and racing the VPN's reconnect
+- IPv6 quietly offering a second route around the tunnel
 
-## Implementation: WireGuard + lockdown mode
+## Implementation: host-wide WireGuard + lockdown mode
 
-The torrent client runs in `network_mode: host`. The host has a Mullvad WireGuard interface (`wg0-mullvad`) up. Mullvad's lockdown mode adds an iptables rule that drops every packet not destined for the WireGuard endpoint. When the tunnel goes down, all traffic stops — including the ISP's local network traffic — until the tunnel is back up.
+The Mullvad daemon runs on the host with a WireGuard interface (`wg0-mullvad`). Lockdown mode makes the daemon's firewall drop every packet that is not LAN traffic or destined for the tunnel; on this host the nftables `input`, `output` and `forward` policies are all `drop`. When the tunnel goes down, traffic stops — it never falls back to the ISP route.
 
-This is kernel-level. There is no userspace agent that can fail open.
+This is enforced in the kernel firewall. There is no userspace agent that can fail open.
 
 ```bash
 mullvad lockdown-mode set on
-mullvad always-require-vpn set on
+mullvad lan set allow          # the LAN must keep working for local clients
 mullvad connect
 ```
+
+IPv6 is disabled with `sysctl` (`net.ipv6.conf.all.disable_ipv6=1` and `default`), and the checks below assert that no IPv6 route exists.
 
 ## Binding the torrent client to the VPN interface
 
-In qBittorrent's preferences:
+qBittorrent runs in `network_mode: host`, so it sees the same tunnel. On top of the host-wide lockdown it is pinned to the WireGuard interface:
 
 ```text
-Connection → Network Interface: wg0-mullvad
-Connection → Optional IP address: <leave blank>
-Advanced → Network interface address: wg0-mullvad
+Advanced → Network interface: wg0-mullvad
+Advanced → Optional IP address to bind to: All addresses
 ```
 
-This binds the listening socket and outgoing connections to the WireGuard interface. Combined with lockdown mode, the client cannot reach the network at all when the VPN is down.
+With the binding in place, the client cannot open a socket on any other interface even if the host firewall were wrong. The binding lives in `qBittorrent.conf`, and the check below verifies that it survives client updates.
 
 ## Verification
 
-`scripts/vpn-killswitch-check.sh` runs every 30 minutes and checks:
+[`scripts/vpn-killswitch-check.sh`](../scripts/vpn-killswitch-check.sh) asks an outside service which exit is actually used, instead of trusting what the VPN client reports:
 
-1. The host's IP via `wg0-mullvad` is a Mullvad exit (not the ISP)
-2. The host's WAN IP via the default route differs from the VPN IP
-3. The torrent client's open sockets all bind to the VPN IP
+1. Lockdown mode is on
+2. The host's exit is a Mullvad exit (`mullvad_exit_ip: true`)
+3. qBittorrent's exit, asked from inside its container, is a Mullvad exit
+4. qBittorrent is still bound to `wg0-mullvad`
+5. No IPv6 route exists
 
-Failure on any check pushes a notification via ntfy.
+The live healthcheck runs the same checks every 15 minutes and pushes via ntfy on failure. *No answer* is reported separately from *wrong answer*: with lockdown on and the tunnel down, nothing gets out at all, which is an outage, not a leak.
 
-## Manual test (do this after every reboot)
+## Manual test (do this after every reboot or VPN change)
 
 ```bash
-# 1. Confirm the tunnel is up
+# 1. Tunnel and lockdown
 mullvad status
+mullvad lockdown-mode get
 
-# 2. Confirm the public IPs differ
-curl --interface wg0-mullvad ifconfig.me   # should be a Mullvad exit
-curl ifconfig.me                            # should be your ISP IP
+# 2. Both exits are Mullvad
+curl -s https://am.i.mullvad.net/json | jq .mullvad_exit_ip
+docker exec qbittorrent wget -qO- https://am.i.mullvad.net/json | jq .mullvad_exit_ip
 
-# 3. Drop the tunnel and confirm the torrent client loses connectivity
+# 3. Drop the tunnel and confirm nothing gets out
 mullvad disconnect
-docker exec qbittorrent curl --max-time 5 ifconfig.me
-# → expected: connection refused / timeout
-
+curl --max-time 5 https://am.i.mullvad.net/json    # → expected: timeout / refused
+docker exec qbittorrent wget -qO- --timeout=5 https://am.i.mullvad.net/json
 mullvad connect
 ```
 
-## Why this is more robust than container-based VPN clients
+## Why host-level instead of a VPN container
 
 A common pattern is to put the torrent client in a container with `network_mode: service:gluetun`. That works, but:
 
+- It protects one container, not the host and every other service on it
 - Gluetun is another moving piece to maintain and trust
-- Container networking has more failure modes than host routing
-- Lockdown mode at the host level protects *every* process on the host that should never leak, not just the one container
+- Container networking has more failure modes than the host's routing table
 
-Host-level Mullvad + lockdown mode is fewer moving parts and stronger guarantees.
+Host-level Mullvad with lockdown mode is fewer moving parts and a stronger guarantee. The one service that needs a different egress — the Cloudflare tunnel — gets its own sidecar that still runs *inside* the Mullvad tunnel ([`docker/cloudflare-egress/`](../docker/cloudflare-egress/README.md)).
