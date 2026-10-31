@@ -22,7 +22,7 @@
 
   <!-- tagline -->
   <text x="60" y="250" font-size="26" fill="#8b949e">
-    Sanitized reference of a real homelab · 44 containers · 2026-08
+    Sanitized reference of a real homelab · 46 containers · 2026-10
   </text>
 
   <!-- accent line -->
@@ -32,9 +32,9 @@
        column centers at x = 205, 495, 785, 1075 (60 px margin both sides) -->
   <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" text-anchor="middle">
     <g transform="translate(205, 360)">
-      <text font-size="56" font-weight="700" fill="#3fb950">44</text>
+      <text font-size="56" font-weight="700" fill="#3fb950">46</text>
       <text y="36" font-size="18" fill="#8b949e">containers</text>
-      <text y="58" font-size="18" fill="#8b949e">one VM</text>
+      <text y="58" font-size="18" fill="#8b949e">bare metal</text>
     </g>
 
     <g transform="translate(495, 360)">
@@ -44,9 +44,9 @@
     </g>
 
     <g transform="translate(785, 360)">
-      <text font-size="56" font-weight="700" fill="#e3b341">6 VMs</text>
-      <text y="36" font-size="18" fill="#8b949e">Proxmox VE</text>
-      <text y="58" font-size="18" fill="#8b949e">8.4</text>
+      <text font-size="56" font-weight="700" fill="#e3b341">VPN</text>
+      <text y="36" font-size="18" fill="#8b949e">all egress</text>
+      <text y="58" font-size="18" fill="#8b949e">lockdown</text>
     </g>
 
     <g transform="translate(1075, 360)">
@@ -58,7 +58,7 @@
 
   <!-- bottom strip: tags -->
   <g transform="translate(60, 560)" font-size="18" fill="#8b949e">
-    <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>proxmox</text>
+    <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>wireguard</text>
   </g>
 
 </svg>
