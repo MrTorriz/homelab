@@ -93,21 +93,11 @@ If Prometheus goes down, ntfy alerters still fire and the healthcheck still runs
 
 Borg/restic would add deduplication and retention policies. At ~20 GB of appdata that buys little; the thing that actually mattered was proving restores work, which is now done (see [disaster recovery](disaster-recovery.md#restore-tests)).
 
-## Network IDS: Suricata over CrowdSec (not currently deployed)
+## Network IDS: tried, and retired
 
-> Suricata ran on the original bare-metal install. It was not brought back inside the VM, nor after the return to bare metal (checked 2026-10-31); the config stays in `security/suricata/` as reference and redeploying it is an open decision. The reasoning below still describes why CrowdSec left.
+CrowdSec ran here first. For a single host most of its value — the community blocklist and bouncers across many machines — was out of reach, and `fail2ban` already produced the same bans from the same SSH and proxy logs with far fewer moving parts. It was replaced by Suricata in passive mode on the LAN interface, for the visibility CrowdSec did not give: lateral traffic, suspicious DNS, exploit signatures.
 
-CrowdSec ran here for a stretch and did its job. The reason it left isn't that it was bad — it's that for a single-host setup, the value-to-overhead ratio drifted the wrong way.
-
-CrowdSec is, at heart, a *behavioural log parser plus a community blocklist plus a bouncer*. Most of its strength comes from the community signal feedback loop, which matters more when you have many sensors contributing and many endpoints consuming. With one host, you're mostly running the agent, the local API, the bouncer, and a parser pipeline so a small stream of NPM and SSH events can produce IP bans — and `fail2ban` already produces those bans against the same logs with a fraction of the moving parts.
-
-What was actually missing wasn't more brute-force defence, it was *visibility* into post-perimeter behaviour: lateral LAN traffic, suspicious DNS, exploit signatures, malware C2 patterns. That's what Suricata gives, and CrowdSec doesn't. So the swap was:
-
-- `fail2ban` keeps the brute-force role (SSH, NPM access logs, anything log-based)
-- `Suricata` takes over the "something hostile is happening on the network" role, in passive mode on the LAN interface
-- The simpler stack — one log-based banner + one network-based detector — is easier to reason about than three overlapping systems
-
-CrowdSec is still the right answer if you have a fleet contributing to and consuming the community blocklist, or if you specifically want managed bouncers across multiple hosts.
+Suricata did not come back after the move into the VM in June 2026, nor after the return to bare metal, and its reference config was removed in October 2026 rather than left to look deployed. What covers the ground today: `fail2ban` for brute force, a push for every SSH login, sudo and watched-file change, NPM scan detection, and an outbound-only network where nothing on the host is reachable from the internet. Lateral-movement visibility on the LAN is a known gap.
 
 ## What got removed and why
 
@@ -117,7 +107,8 @@ CrowdSec is still the right answer if you have a fleet contributing to and consu
 | Scaphandre | Host power metrics needed a root-capable container; dropped during the VM period and not brought back. |
 | Authentik | Cloudflare Access + per-app auth is sufficient for a single user. Authentik was a service to maintain for a problem I didn't have. |
 | Paperless-ngx | OCR pipeline was used twice in six months. Not worth the running cost. |
-| CrowdSec | Replaced by `fail2ban` for brute-force and Suricata for behavioural network detection — see the section above. |
+| CrowdSec | `fail2ban` covers brute force with fewer moving parts — see [Network IDS](#network-ids-tried-and-retired). |
+| Suricata | Not redeployed after June 2026; reference config removed in October 2026. |
 
 ## Nextcloud, second time around
 
@@ -131,6 +122,6 @@ It sits behind NPM at `nextcloud.${DOMAIN}` with its own Postgres 16 and Redis 7
 
 - UPS — identified gap
 - More RAM, before the next Postgres-backed service
-- Decide on Suricata: redeploy on bare metal, or retire the reference config
+- Network visibility on the LAN, if the IoT side of the network grows
 - Off-site monitoring probe beyond the tunnel-health e-mail
 - Splitting the host: keep media/photos here, move security/observability to a separate small box, so a host outage doesn't blind the alerting

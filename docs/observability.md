@@ -80,9 +80,9 @@ No sidecar pre-aggregates anything — Homepage talks to Prometheus, Prometheus 
 The metrics layer answers "what is happening?". The events layer answers "what *just happened* that I need to know about *right now*?".
 
 <p align="center">
-  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature, file-watcher" width="780"/>
+  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, proxy scan, file-watcher" width="780"/>
   <br/>
-  <sub>Synthetic demo (<code>scripts/demo/</code>); the Suricata event shown here is not currently deployed.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>); sources are placeholders.</sub>
 </p>
 
 The high-signal layer is the **event-driven security sources** — these are the ones that wake you up in the middle of the night:
@@ -92,7 +92,6 @@ The high-signal layer is the **event-driven security sources** — these are the
 | `ssh-login-notify` | every successful SSH session | PAM `pam_exec` on `sshd` | low if LAN, **urgent** if external |
 | `sudo-notify` | interactive sudo invocation | PAM `pam_exec` on `sudo` | high |
 | `fail2ban-notify` | IP banned/unbanned in any jail | fail2ban action hook | high on ban |
-| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — **not currently deployed** | high |
 | `docker-events-ntfy` | container start/stop/die/oom | live-only systemd monitor; companion not published in this showcase | mixed |
 | `npm-monitor` | path scans, 401 spam, sqlmap signatures | systemd unit tailing NPM access logs | high |
 | `file-watcher` | mutation in critical paths (sshd config, sudoers, cron, authorized_keys) | systemd unit on inotify | urgent |

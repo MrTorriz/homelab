@@ -45,6 +45,21 @@ The honest summary of "is this hardware right for the job":
 
 Current disk and RAM figures, with what was and was not re-measured, live in [`metrics.md`](metrics.md). The short version: bulk storage is the next bottleneck, then memory, never compute.
 
+## Running cost
+
+Measured in April 2026, before host power metering was removed in July, so treat the electricity figure as an estimate:
+
+| Item | SEK / year | Note |
+|---|---:|---|
+| Electricity | ~2 250 | ~80 W idle, ~200 W during transcodes and ML; ~900 kWh at the wall × 2.50 SEK/kWh |
+| Mullvad VPN | ~720 | flat monthly price |
+| Domain | ~140 | one domain, one wildcard certificate |
+| Cloudflare Tunnel + Access | 0 | free tier |
+| Disk replacement | ~750 | two HDDs rotated roughly every four years |
+| **Marginal total** | **~3 900** | the internet line is shared with the household, and the desktop was already paid for |
+
+Everything else is open-source and self-hosted, so there are no per-service bills. The case for the lab is control, learning and keeping data off SaaS providers — the cost is simply low enough not to argue against it.
+
 ## What I'd do differently from scratch
 
 If I were sourcing parts for a *purpose-built* homelab today rather than reusing what was on hand, the spec sheet would look different:

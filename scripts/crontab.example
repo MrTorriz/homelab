@@ -31,7 +31,7 @@
 # Kill-switch proof — host and torrent client both exit via Mullvad
 */30 * * * *    $HOME/scripts/vpn-killswitch-check.sh
 
-# Daily — log hygiene at 02:00 (journal, suricata, rclone)
+# Daily — log hygiene at 02:00 (journal, rclone)
 0 2 * * *       $HOME/scripts/maintenance/syslog-cleaner.sh
 
 # Weekly — Sunday 00:00 virus + rootkit scan

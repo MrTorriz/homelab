@@ -7,7 +7,6 @@ The defense-in-depth pieces of the homelab.
 | `ufw-baseline.sh` | Apply default-deny UFW with a minimal allowlist |
 | `fail2ban/jail.local` | SSH brute-force protection |
 | `ssh/sshd_config` | Hardened SSH: keys-only, strong crypto, explicit user allowlist |
-| `suricata/` | Passive IDS — reference config; not currently deployed |
 | `sysctl.d/99-homelab.conf` | Kernel tuning (swappiness + commented optionals) |
 | `hardening-checklist.md` | Copy-and-work-through list for any new Ubuntu host |
 | `vpn-killswitch.md` | Host-wide VPN lockdown, torrent client binding, and how both are verified |
