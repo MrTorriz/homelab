@@ -1,64 +1,26 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0d1117"/>
-      <stop offset="1" stop-color="#010409"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#3fb950"/>
-      <stop offset="1" stop-color="#2f81f7"/>
-    </linearGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#21262d" stroke-width="1"/>
-    </pattern>
-  </defs>
-
-  <rect width="1280" height="640" fill="url(#bg)"/>
-  <rect width="1280" height="640" fill="url(#grid)" opacity="0.5"/>
-
-  <!-- title -->
-  <text x="60" y="200" font-size="96" font-weight="700" fill="#e6edf3" letter-spacing="-2">Homelab</text>
-
-  <!-- tagline -->
-  <text x="60" y="250" font-size="26" fill="#8b949e">
-    Sanitized reference of a real homelab · 46 containers · 2026-10
-  </text>
-
-  <!-- accent line -->
-  <rect x="60" y="285" width="180" height="4" fill="url(#accent)" rx="2"/>
-
-  <!-- metrics grid — 4 stat cards, each centered in a 290 px column,
-       column centers at x = 205, 495, 785, 1075 (60 px margin both sides) -->
-  <g font-family="ui-monospace, 'SF Mono', Menlo, Consolas, monospace" text-anchor="middle">
-    <g transform="translate(205, 360)">
-      <text font-size="56" font-weight="700" fill="#3fb950">46</text>
-      <text y="36" font-size="18" fill="#8b949e">containers</text>
-      <text y="58" font-size="18" fill="#8b949e">bare metal</text>
-    </g>
-
-    <g transform="translate(495, 360)">
-      <text font-size="56" font-weight="700" fill="#2f81f7">tunnel</text>
-      <text y="36" font-size="18" fill="#8b949e">outbound</text>
-      <text y="58" font-size="18" fill="#8b949e">ingress</text>
-    </g>
-
-    <g transform="translate(785, 360)">
-      <text font-size="56" font-weight="700" fill="#e3b341">VPN</text>
-      <text y="36" font-size="18" fill="#8b949e">all egress</text>
-      <text y="58" font-size="18" fill="#8b949e">lockdown</text>
-    </g>
-
-    <g transform="translate(1075, 360)">
-      <text font-size="56" font-weight="700" fill="#f85149">18</text>
-      <text y="36" font-size="18" fill="#8b949e">ntfy</text>
-      <text y="58" font-size="18" fill="#8b949e">callers</text>
-    </g>
-  </g>
-
-  <!-- bottom strip: tags -->
-  <g transform="translate(60, 560)" font-size="18" fill="#8b949e">
-    <text><tspan fill="#3fb950">#</tspan>docker  <tspan fill="#3fb950">#</tspan>security  <tspan fill="#3fb950">#</tspan>selfhosted  <tspan fill="#3fb950">#</tspan>defense-in-depth  <tspan fill="#3fb950">#</tspan>wireguard</text>
-  </g>
-
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="640" viewBox="0 0 1280 640" font-family="-apple-system, 'SF Pro Display', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+<defs>
+ <radialGradient id="glow" cx="0.82" cy="0.38" r="0.62"><stop offset="0" stop-color="#2f81f7" stop-opacity="0.28"/><stop offset="1" stop-color="#2f81f7" stop-opacity="0"/></radialGradient>
+ <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#161b22" stroke-width="1"/></pattern>
+ <linearGradient id="fadeX" x1="0" y1="0" x2="1" y2="0"><stop offset="0.72" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+ <linearGradient id="fadeY" x1="0" y1="0" x2="0" y2="1"><stop offset="0.70" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+ <mask id="fadeMask"><rect x="0" y="0" width="1280" height="640" fill="url(#fadeX)"/></mask>
+ <mask id="fadeMaskY"><rect x="0" y="0" width="1280" height="640" fill="url(#fadeY)"/></mask>
+ <clipPath id="shot"><rect x="618" y="92" width="800" height="520" rx="16"/></clipPath>
+ <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000" flood-opacity="0.65"/></filter>
+</defs>
+<rect width="1280" height="640" fill="#0a0c10"/>
+<rect width="1280" height="640" fill="url(#grid)" opacity="0.7"/>
+<rect width="1280" height="640" fill="url(#glow)"/>
+<g mask="url(#fadeMask)"><g mask="url(#fadeMaskY)">
+ <rect x="618" y="92" width="800" height="520" rx="16" fill="#0b0b0b" filter="url(#shadow)"/>
+ <image href="homepage-public.png" x="618" y="92" width="800" height="520" preserveAspectRatio="xMinYMin slice" clip-path="url(#shot)"/>
+ <rect x="618.5" y="92.5" width="800" height="520" rx="16" fill="none" stroke="#30363d"/>
+</g></g>
+<text x="72" y="150" font-family="'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="20" fill="#7d8590">MrTorriz / homelab</text>
+<text x="68" y="246" font-size="96" font-weight="700" fill="#f0f6fc" letter-spacing="-2">Homelab</text>
+<text x="72" y="306" font-size="27" fill="#9198a1">One bare-metal box, run like production —</text>
+<text x="72" y="344" font-size="27" fill="#9198a1">sanitized, documented and verified.</text>
+<rect x="72" y="402" width="198" height="42" rx="21" fill="#161b22" stroke="#30363d"/><circle cx="92" cy="423" r="5" fill="#3fb950"/><text x="106" y="430" font-size="19" fill="#e6edf3">46 containers</text><rect x="284" y="402" width="247" height="42" rx="21" fill="#161b22" stroke="#30363d"/><circle cx="304" cy="423" r="5" fill="#3fb950"/><text x="318" y="430" font-size="19" fill="#e6edf3">bare-metal Ubuntu</text><rect x="72" y="460" width="223" height="42" rx="21" fill="#161b22" stroke="#30363d"/><circle cx="92" cy="481" r="5" fill="#3fb950"/><text x="106" y="488" font-size="19" fill="#e6edf3">VPN-only egress</text><rect x="309" y="460" width="210" height="42" rx="21" fill="#161b22" stroke="#30363d"/><circle cx="329" cy="481" r="5" fill="#3fb950"/><text x="343" y="488" font-size="19" fill="#e6edf3">tunnel ingress</text>
+<text x="72" y="584" font-family="'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace" font-size="16" fill="#6e7681">Docker · Prometheus · Grafana · Cloudflare Tunnel · Mullvad</text>
 </svg>

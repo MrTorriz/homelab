@@ -122,7 +122,7 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 └── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
 ```
 
-The repository's social preview is generated from [`docs/img/social-preview.svg`](docs/img/social-preview.svg) (rendered to [`social-preview.png`](docs/img/social-preview.png) with `rsvg-convert`); `docs/img/architecture.svg` is hand-edited in the same style.
+The repository's social preview is drawn in [`docs/img/social-preview.svg`](docs/img/social-preview.svg), which frames the Homepage capture, and rendered to [`social-preview.png`](docs/img/social-preview.png) at 1280 × 640; `docs/img/architecture.svg` is hand-edited.
 
 ## Reusing pieces
 
