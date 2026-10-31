@@ -111,16 +111,15 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 
 ## Repo layout
 
-```text
-.
-├── docker/              # Compose stack (45 services; 46 containers live), .env.example, WARP egress sidecar
-├── homepage/            # Homepage config, styles and the two Glance instances
-├── scripts/             # healthcheck, VPN checks, backup/, security/, monitoring/, maintenance/, motd/, systemd/
-├── security/            # UFW baseline, fail2ban, SSH, sysctl, VPN kill-switch, hardening checklist
-├── monitoring/          # Prometheus scrape config, Grafana provisioning and the overview dashboard
-├── docs/                # Architecture, security, observability, metrics, runbook, DR, decisions, lessons learned
-└── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
-```
+| Directory | Contents |
+|---|---|
+| [`docker/`](docker/) | Compose stack (45 services; 46 containers live), `.env.example`, WARP egress sidecar |
+| [`homepage/`](homepage/) | Homepage config, styles and the two Glance instances |
+| [`scripts/`](scripts/) | Healthcheck, VPN checks, `backup/`, `security/`, `monitoring/`, `maintenance/`, `motd/`, `systemd/` |
+| [`security/`](security/) | UFW baseline, fail2ban, SSH, sysctl, VPN kill-switch, hardening checklist |
+| [`monitoring/`](monitoring/) | Prometheus scrape config, Grafana provisioning and the overview dashboard |
+| [`docs/`](docs/) | Architecture, security, observability, metrics, runbook, DR, decisions, lessons learned |
+| [`.github/workflows/`](.github/workflows/) | CI: ShellCheck, yamllint, markdownlint, gitleaks, Compose validation, link and fact checks |
 
 The repository's social preview is drawn in [`docs/img/social-preview.svg`](docs/img/social-preview.svg), which frames the Homepage capture, and rendered to [`social-preview.png`](docs/img/social-preview.png) at 1280 × 640; [`docs/img/architecture.svg`](docs/img/architecture.svg) is drawn by [`scripts/diagrams/architecture.py`](scripts/diagrams/architecture.py).
 
