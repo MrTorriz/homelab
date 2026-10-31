@@ -18,8 +18,10 @@ Set Shell "bash"
 Set TypingSpeed 55ms
 Set PlaybackSpeed 1.0
 
+# The prompt glyph (U+276F) is written as octal bytes: typing the multibyte character
+# itself through vhs corrupts the PS1 and leaks a raw colour code into the first frame.
 Hide
-Type "server() { PS1=''; bash scripts/demo/server-motd-demo.sh; }; PS1='\[\e[38;5;204m\]~\[\e[0m\] \[\e[38;5;71m\]❯\[\e[0m\] '"
+Type "server() { PS1=''; bash scripts/demo/server-motd-demo.sh; }; PS1=$'\[\e[38;5;204m\]~\[\e[0m\] \[\e[38;5;71m\]\342\235\257\[\e[0m\] '"
 Enter
 Type "clear"
 Enter
