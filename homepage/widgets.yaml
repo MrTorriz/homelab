@@ -1,5 +1,8 @@
-# Top-bar widgets for Homepage — mirrors the live header (2026-08-28)
+# Top-bar widgets for Homepage — mirrors the live header (2026-10-31).
 # https://gethomepage.dev/widgets/
+#
+# The greeting text is swapped for an inline SVG logo by custom.js. The
+# weather location is generalized to a city-level example.
 
 - greeting:
     text_size: 4xl
@@ -7,14 +10,22 @@
 
 - datetime:
     text_size: lg
+    locale: en-GB
     format:
-      weekday: short
+      weekday: long
+      day: numeric
+      month: long
+
+- datetime:
+    text_size: xl
+    locale: en-GB
+    format:
       hour: 2-digit
       minute: 2-digit
       hour12: false
 
 - openmeteo:
-    label: Sweden
+    label: Stockholm
     latitude: 59.3293
     longitude: 18.0686
     timezone: Europe/Stockholm
@@ -26,23 +37,15 @@
     uptime: true
     refresh: 1500
 
+# One combined panel for the three filesystems: the system SSD and the two
+# HDDs as mounted inside the Homepage container (read-only, see compose).
 - resources:
-    label: SSD
+    label: SSD · Storage · Media
     expanded: true
-    disk: /
-
-- resources:
-    label: HDD1
-    expanded: true
-    disk: /mnt/storage
-
-- resources:
-    label: HDD2
-    expanded: true
-    disk: /mnt/media
+    disk: ["/", "/mnt/storage", "/mnt/media"]
 
 - search:
     provider: google
-    focus: true
+    focus: false
     showSearchSuggestions: true
     target: _blank

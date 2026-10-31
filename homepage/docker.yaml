@@ -1,0 +1,10 @@
+# Docker connection for container status and stats.
+# https://gethomepage.dev/configs/docker/
+#
+# Homepage never mounts the Docker socket. It talks to the read-only
+# docker-socket-proxy on the internal `socket-ro` network, which only
+# allows the GET endpoints needed for status and stats.
+
+my-docker:
+  host: docker-proxy
+  port: 2375

@@ -1,107 +1,111 @@
-# Homepage services config — group-by-row layout
+# Homepage services — mirrors the live dashboard (2026-10-31): 28 cards in
+# five groups. Domains are replaced by `example.com`, the host address by
+# `${LAN_IP}` and the gateway by `${GATEWAY_IP}`; personal cards are removed.
 #
-# Mirrors the live dashboard as of 2026-08-28, with the domain replaced by
-# `example.com` and personal tiles removed.
-# `container:` entries are auto-discovered via the read-only docker-socket-proxy.
-# `{{HOMEPAGE_VAR_*}}` placeholders are pulled from Homepage's own .env.
-
-# Row 1 — four balanced groups (Network / System / Media / Links)
+# `container:` + `server: my-docker` attach the status dot and CPU/memory
+# stats through the read-only docker-socket-proxy (see docker.yaml).
+# `{{HOMEPAGE_VAR_*}}` placeholders are substituted by Homepage from its own
+# .env (template: .env.example) — no credential is stored in this file.
+# Layout (columns, row groups) lives in settings.yaml.
 
 - Network:
     - AdGuard Home:
         icon: adguard-home.png
         href: https://adguard.example.com
         container: adguardhome
+        server: my-docker
         description: DNS filtering & ad blocking
         widget:
           type: adguard
           url: http://${LAN_IP}:3000
           username: '{{HOMEPAGE_VAR_ADGUARD_USERNAME}}'
           password: '{{HOMEPAGE_VAR_ADGUARD_PASSWORD}}'
-          fields: ["queries", "blocked", "filtered"]
+          fields: ["queries", "blocked"]
     - Nginx Proxy Manager:
         icon: nginx-proxy-manager.png
         href: https://npm.example.com
         container: npm
+        server: my-docker
         description: Reverse proxy & SSL certs
         widget:
           type: npm
           url: http://npm:81
           username: '{{HOMEPAGE_VAR_NPM_USERNAME}}'
           password: '{{HOMEPAGE_VAR_NPM_PASSWORD}}'
+          fields: ["enabled", "disabled"]
     - Cloudflared:
         icon: cloudflare.png
         href: https://one.dash.cloudflare.com
         container: cloudflared
+        server: my-docker
         description: Tunnel & Zero Trust access
         widget:
-          type: cloudflared
-          accountid: '{{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNT}}'
-          tunnelid: '{{HOMEPAGE_VAR_CLOUDFLARED_TUNNEL}}'
-          key: '{{HOMEPAGE_VAR_CLOUDFLARED_KEY}}'
-          fields: ["status"]
+          # Tunnel status and live connection count straight from the
+          # Cloudflare API, with a read-only API token.
+          type: customapi
+          url: "https://api.cloudflare.com/client/v4/accounts/{{HOMEPAGE_VAR_CLOUDFLARED_ACCOUNT}}/\
+            cfd_tunnel/{{HOMEPAGE_VAR_CLOUDFLARED_TUNNEL}}"
+          headers:
+            Authorization: 'Bearer {{HOMEPAGE_VAR_CLOUDFLARED_KEY}}'
+          refreshInterval: 60000
+          mappings:
+            - field: result.status
+              label: Status
+            - field: result.connections
+              label: Connections
+              format: size
     - Speedtest Tracker:
         icon: speedtest-tracker.png
         href: https://speedtest.example.com
         container: speedtest
-        description: Internet speed monitoring
+        server: my-docker
+        description: Latest measurement
         widget:
-          type: speedtest
-          url: http://${LAN_IP}:8765
-          fields: ["download", "upload"]
+          type: customapi
+          url: http://${LAN_IP}:8765/api/speedtest/latest
+          refreshInterval: 60000
+          mappings:
+            - field: data.download
+              label: Mbps down
+              format: float
+            - field: data.upload
+              label: Mbps up
+              format: float
 
 - System:
     - Portainer:
         icon: portainer.png
         href: https://portainer.example.com
         container: portainer
+        server: my-docker
         description: Container management
         widget:
           type: portainer
           url: http://portainer:9000
           env: 3
           key: '{{HOMEPAGE_VAR_PORTAINER_KEY}}'
+          fields: ["running", "stopped"]
     - Nextcloud:
         icon: nextcloud.png
         href: https://cloud.example.com
         container: nextcloud
-        description: Laptop, iPhone & server sync
+        server: my-docker
+        description: Laptop, phone & server sync
         widget:
-          # Used/free on the storage volume, read from Prometheus (node-exporter)
-          # rather than the Glances API: Glances 4.5.x dropped the v3 API and its
-          # fs plugin returns an empty list inside a container.
-          # label_replace is required: Prometheus `or` compares label sets
-          # without __name__, so without the `k` label the two series collide
-          # and one is silently dropped. Order: result[0] = used, result[1] = free.
-          type: customapi
-          url: "http://prometheus:9090/api/v1/query?query=\
-            label_replace%28node_filesystem_size_bytes%7Bmountpoint%3D%22%2Fmnt%2Fstorage%22%7D%20-%20\
-            node_filesystem_avail_bytes%7Bmountpoint%3D%22%2Fmnt%2Fstorage%22%7D%2C%20%22k%22%2C%20%22a_used%22%2C%20%22%22%2C%20%22%22%29\
-            %20or%20label_replace%28node_filesystem_avail_bytes%7Bmountpoint%3D%22%2Fmnt%2Fstorage%22%7D%2C%20%22k%22%2C%20%22b_free%22%2C%20%22%22%2C%20%22%22%29"
-          refreshInterval: 60000
-          mappings:
-            - field:
-                data:
-                  result:
-                    "0":
-                      value: "1"
-              label: Used
-              format: bytes
-            - field:
-                data:
-                  result:
-                    "1":
-                      value: "1"
-              label: Free
-              format: bytes
+          # Separate read-only serverinfo token, never the admin password.
+          type: nextcloud
+          url: http://nextcloud:80
+          key: '{{HOMEPAGE_VAR_NEXTCLOUD_TOKEN}}'
+          fields: ["numfiles", "activeusers"]
     - Grafana:
         icon: grafana.png
         href: https://grafana.example.com/d/homelab-overview
         container: grafana
-        description: Server stats & energy
+        server: my-docker
+        description: Server & GPU stats
         widget:
-          # GPU power + temperature from nvidia-gpu-exporter. Host power used
-          # to come from Scaphandre (removed 2026-07-04).
+          # GPU power + temperature from nvidia-gpu-exporter in one PromQL
+          # query; result[0] = power, result[1] = temperature.
           type: customapi
           url: "http://prometheus:9090/api/v1/query?query=\
             %7B__name__%3D~%22nvidia_smi_power_draw_watts%7Cnvidia_smi_temperature_gpu%22%7D"
@@ -112,7 +116,7 @@
                   result:
                     "0":
                       value: "1"
-              label: GPU
+              label: GPU power
               suffix: " W"
               format: float
             - field:
@@ -120,199 +124,137 @@
                   result:
                     "1":
                       value: "1"
-              label: Temp
+              label: GPU temp
               suffix: "°C"
               format: float
     - Scrutiny:
         icon: scrutiny.png
         href: https://scrutiny.example.com
         container: scrutiny
-        description: Disk health monitoring
+        server: my-docker
+        description: Disk SMART health
         widget:
-          # Scrutiny keys devices by NVMe serial / SATA WWN. Replace the
-          # placeholders with the identifiers shown at /api/summary on your box.
-          type: customapi
-          url: http://scrutiny:8080/api/summary
-          refreshInterval: 300000
-          mappings:
-            - field:
-                data:
-                  summary:
-                    "<nvme-serial>":
-                      smart: temp
-              label: NVMe
-              suffix: "°C"
-            - field:
-                data:
-                  summary:
-                    "<hdd-wwn-1>":
-                      smart: temp
-              label: HDD1
-              suffix: "°C"
-            - field:
-                data:
-                  summary:
-                    "<hdd-wwn-2>":
-                      smart: temp
-              label: HDD2
-              suffix: "°C"
-    - Dozzle:
-        icon: dozzle.png
-        href: https://dozzle.example.com
-        container: dozzle
-        description: Container logs
-        widget:
-          # Running-container count from cadvisor via Prometheus.
-          type: customapi
-          url: http://prometheus:9090/api/v1/query?query=count(container_last_seen%7Bname!%3D%22%22%7D)
-          refreshInterval: 60000
-          mappings:
-            - field:
-                data:
-                  result:
-                    "0":
-                      value: "1"
-              label: Containers
-              format: number
+          type: scrutiny
+          url: http://scrutiny:8080
+          fields: ["passed", "failed"]
 
 - Media:
     - Jellyfin:
         icon: jellyfin.png
         href: https://jellyfin.example.com
         container: jellyfin
+        server: my-docker
         description: Media streaming server
         widget:
           type: jellyfin
+          version: 2
           url: http://jellyfin:8096
           key: '{{HOMEPAGE_VAR_JELLYFIN_KEY}}'
           enableBlocks: true
           enableNowPlaying: false
-          fields: ["movies", "series", "songs"]
+          fields: ["movies", "series"]
     - qBittorrent:
         icon: qbittorrent.png
         href: https://qbittorrent.example.com
         container: qbittorrent
-        description: Torrent client (VPN-bound)
+        server: my-docker
+        description: Active downloads
         widget:
+          # Host network (VPN-bound), so it is reached on the LAN address.
           type: qbittorrent
           url: http://${LAN_IP}:8080
           username: '{{HOMEPAGE_VAR_QBIT_USER}}'
           password: '{{HOMEPAGE_VAR_QBIT_PASS}}'
-          fields: ["leech", "seed", "download"]
+          fields: ["download", "leech"]
+          enableLeechProgress: false
+          enableLeechSize: true
     - Audiobookshelf:
         icon: audiobookshelf.png
         href: https://audiobookshelf.example.com
         container: audiobookshelf
-        description: Audiobook library
+        server: my-docker
+        description: Book library
         widget:
-          type: audiobookshelf
-          url: http://audiobookshelf:80
-          key: '{{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}'
-          fields: ["books", "podcasts"]
+          # Library stats endpoint; replace <library-id> with the ID from
+          # GET /api/libraries.
+          type: customapi
+          url: http://audiobookshelf:80/api/libraries/<library-id>/stats
+          refreshInterval: 60000
+          headers:
+            Authorization: 'Bearer {{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}'
+          mappings:
+            - field: totalItems
+              label: Books
+              format: number
+            - field: totalAuthors
+              label: Authors
+              format: number
     - Immich:
         icon: immich.png
         href: https://immich.example.com
         container: immich_server
+        server: my-docker
         description: Photo & video backup
         widget:
           type: immich
           url: http://immich_server:2283
           key: '{{HOMEPAGE_VAR_IMMICH_KEY}}'
           version: 2
-          fields: ["users", "photos", "videos"]
+          fields: ["photos", "videos"]
 
-- Links:
-    - Ntfy:
-        icon: ntfy.png
-        href: https://ntfy.example.com
-        container: ntfy
-        description: Push notifications
-    - IT-Tools:
-        icon: it-tools.png
-        href: https://tools.example.com
-        container: it-tools
-        description: Developer utilities
-    - Draw.io:
-        icon: draw-io.png
-        href: https://drawio.example.com
-        container: drawio
-        description: Proxmox topology
-    - Proxmox VE:
-        icon: proxmox.png
-        href: https://proxmox.example.com
-        description: Hypervisor web UI
-        siteMonitor: https://proxmox.example.com
-    - GitHub:
-        icon: github.png
-        href: https://github.com
-        description: Public repos
-        siteMonitor: https://github.com
-    - Router:
-        icon: mdi-router-wireless
-        href: https://router.example.com
-        description: ISP gateway
-        siteMonitor: https://router.example.com
-    - Glance:
-        icon: mdi-newspaper-variant-multiple
-        href: https://glance.example.com
-        container: glance
-        description: News & RSS feed
-
-# Row 2 — *arr stack full-width
-
-- "*arr Stack":
+# Row group, three columns (settings.yaml)
+- Media Management:
     - Seerr:
         icon: overseerr
         href: https://seerr.example.com
         container: seerr
+        server: my-docker
         description: Media requests
         widget:
           type: overseerr
           url: http://seerr:5055
           key: '{{HOMEPAGE_VAR_OVERSEERR_KEY}}'
           fields: ["processing", "available"]
-    - Sonarr:
-        icon: sonarr.png
-        href: https://sonarr.example.com
-        container: sonarr
-        description: TV series management
-        widget:
-          type: sonarr
-          url: http://sonarr:8989
-          key: '{{HOMEPAGE_VAR_SONARR_KEY}}'
     - Radarr:
         icon: radarr.png
         href: https://radarr.example.com
         container: radarr
-        description: Movie management
+        server: my-docker
+        description: Missing & import status
         widget:
           type: radarr
           url: http://radarr:7878
           key: '{{HOMEPAGE_VAR_RADARR_KEY}}'
-          fields: ["wanted", "missing", "queued"]
-    - Lidarr:
-        icon: lidarr.png
-        href: https://lidarr.example.com
-        container: lidarr
-        description: Music management
+          fields: ["missing", "queued"]
+          enableQueue: false
+    - Sonarr:
+        icon: sonarr.png
+        href: https://sonarr.example.com
+        container: sonarr
+        server: my-docker
+        description: Episodes & import status
         widget:
-          type: lidarr
-          url: http://lidarr:8686
-          key: '{{HOMEPAGE_VAR_LIDARR_KEY}}'
+          type: sonarr
+          url: http://sonarr:8989
+          key: '{{HOMEPAGE_VAR_SONARR_KEY}}'
+          enableQueue: false
+          fields: ["wanted", "queued"]
     - Bazarr:
         icon: bazarr.png
         href: https://bazarr.example.com
         container: bazarr
-        description: Subtitle management
+        server: my-docker
+        description: Configured subtitle needs
         widget:
           type: bazarr
           url: http://bazarr:6767
           key: '{{HOMEPAGE_VAR_BAZARR_KEY}}'
-          fields: ["missingEpisodes"]
+          fields: ["missingEpisodes", "missingMovies"]
     - Prowlarr:
         icon: prowlarr.png
         href: https://prowlarr.example.com
         container: prowlarr
+        server: my-docker
         description: Indexer management
         widget:
           type: prowlarr
@@ -323,12 +265,75 @@
         icon: tdarr.png
         href: https://tdarr.example.com
         container: tdarr
-        description: Transcoding
+        server: my-docker
+        description: Transcode & health checks
         widget:
           type: tdarr
           url: http://tdarr:8265
           fields: ["queue", "errored"]
-    - FlareSolverr:
-        icon: flaresolverr.png
-        container: flaresolverr
-        description: Cloudflare bypass
+
+# Row group, five columns: ten compact shortcuts in a 5 × 2 grid
+- Shortcuts:
+    - Ntfy:
+        icon: ntfy.png
+        href: https://ntfy.example.com
+        container: ntfy
+        server: my-docker
+        description: Push notifications
+    - GitHub:
+        icon: github.png
+        href: https://github.com
+        description: Code & public repos
+        siteMonitor: https://github.com
+    - Router:
+        icon: mdi-router-wireless
+        href: https://router.example.com
+        description: ISP gateway
+        # ICMP reachability rather than HTTP: the router UI uses a
+        # self-signed certificate.
+        ping: ${GATEWAY_IP}
+    - Glance:
+        icon: mdi-newspaper-variant-multiple
+        href: https://glance.example.com
+        container: glance
+        server: my-docker
+        description: News & RSS feed
+    - IT-Tools:
+        icon: it-tools.png
+        href: https://tools.example.com
+        container: it-tools
+        server: my-docker
+        description: Utilities
+    - GNS3:
+        # The GNS3 server runs as a systemd service on the host, not in
+        # Docker, and its firewall rule admits a single admin workstation.
+        icon: mdi-lan-connect
+        href: http://${LAN_IP}:3080/static/web-ui/server/1/projects
+        description: Network lab server
+        # Answers 401 without a login; Homepage counts any status up to 403
+        # as "up", which is all this check needs (the server responds).
+        siteMonitor: http://${LAN_IP}:3080/v2/version
+    - Draw.io:
+        icon: draw-io.png
+        href: "https://drawio.example.com/?title=server-topology&url=https://drawio.example.com/diagrams/server-topology.drawio"
+        container: drawio
+        server: my-docker
+        description: Server topology
+    - Dozzle:
+        icon: dozzle.png
+        href: https://dozzle.example.com
+        container: dozzle
+        server: my-docker
+        description: Container logs
+    - Lidarr:
+        icon: lidarr.png
+        href: https://lidarr.example.com
+        container: lidarr
+        server: my-docker
+        description: Music management
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: https://uptime.example.com/status/homelab
+        container: uptime-kuma
+        server: my-docker
+        description: Service uptime & history

@@ -1,0 +1,44 @@
+# Homepage settings — mirrors the live dashboard (2026-10-31).
+# https://gethomepage.dev/configs/settings/
+#
+# Three main columns (Network · System · Media), then two full-width row
+# groups: Media Management (3 columns) and Shortcuts (5 columns, 5 × 2).
+# The look itself (near-black background, graphite cards, typography)
+# comes from custom.css.
+
+title: Mserver
+language: en
+theme: dark
+color: zinc
+target: _blank
+headerStyle: clean
+statusStyle: "dot"
+hideVersion: true
+disableCollapse: true
+useEqualHeights: true
+columns: 3
+background:
+  opacity: 0
+
+layout:
+  Network:
+    icon: mdi-lan
+  System:
+    icon: mdi-server
+  Media:
+    icon: mdi-play-circle
+  Media Management:
+    icon: mdi-movie-open-cog
+    style: row
+    columns: 3
+  Shortcuts:
+    icon: mdi-link-variant
+    style: row
+    columns: 5
+
+# Type-to-search across service names and descriptions (Ctrl/Cmd + K).
+quicklaunch:
+  searchDescriptions: true
+  hideVisitURL: true
+  showSearchSuggestions: false
+  mobileButtonPosition: bottom-right
