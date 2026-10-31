@@ -21,11 +21,11 @@ All three run on the host. The one signal that does not is Cloudflare's tunnel-h
 ## Metrics layer — Prometheus + Grafana
 
 <p align="center">
-  <img src="img/grafana-overview.png" alt="Grafana — top summary of the Homelab Overview dashboard with power, energy, cost and uptime" width="900"/>
+  <img src="img/grafana-overview.png" alt="Grafana — Homelab Overview with host stats, CPU and memory, top containers, GPU load with NVENC sessions, temperatures, disks and network" width="900"/>
 </p>
 
-> Captured from an ephemeral demo stack with synthetic metrics — see
-> [`../monitoring/demo/`](../monitoring/demo/). Same dashboard JSON, fabricated values.
+> Live capture, 2026-10-31, last 24 hours. Dashboard JSON:
+> [`../monitoring/grafana/dashboards/homelab-overview.json`](../monitoring/grafana/dashboards/homelab-overview.json).
 
 Five containers, scraped on a 15-second interval, retained for 90 days:
 
@@ -43,26 +43,23 @@ Host CPU, memory, disk and network from node-exporter; per-container CPU, memory
 
 > **Scaphandre — historical.** Until 2026-07-04 a sixth container, `hubblo/scaphandre`, read Intel RAPL counters and exported CPU+RAM watts. It needed a root-capable container and was dropped when the stack moved into a VM, and has not been brought back since the return to bare metal; nothing collects host power at the moment and the *Total* / *CPU + RAM* panels below are empty. If you run it on bare metal, keep the job-level `fallback_scrape_protocol: PrometheusText0.0.4` in the scrape config (see `monitoring/prometheus.yml.example`) — Prometheus 3.x defaults to OpenMetrics and silently returns blank panels otherwise.
 
-### The dashboard — twelve panels, one story
+### The dashboard — one screen, five questions
 
-Layout in `monitoring/grafana/dashboards/homelab-overview.json`:
+`monitoring/grafana/dashboards/homelab-overview.json`, 17 panels, 24 hours by default:
 
-| # | Panel | Source query (PromQL) |
+| Row | Question it answers | Panels and the idea behind the query |
 |---|---|---|
-| 1 | Total power (CPU + GPU) | `(scaph_host_power_microwatts / 1e6) + nvidia_smi_power_draw_watts` — empty since 2026-07-04 |
-| 2 | CPU + RAM watts | `scaph_host_power_microwatts / 1e6` — empty since 2026-07-04 |
-| 3 | GPU watts | `nvidia_smi_power_draw_watts` |
-| 4 | GPU temperature | `nvidia_smi_temperature_gpu` |
-| 5 | Power over time | three series stacked, last 6 h |
-| 6 | 24 h energy (kWh) | `sum_over_time((...)[24h:1m]) / 60 / 1000` |
-| 7 | 24 h cost | panel 6 × `$ELECTRICITY_PRICE` (template variable, default 2.0) |
-| 8 | Uptime | `time() - node_boot_time_seconds` |
-| 9 | CPU % | `100 - (avg by (mode) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)` |
-| 10 | Memory used / free | `node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes` |
-| 11 | Disk usage per mount | three filesystems |
-| 12 | Network RX/TX per interface | excludes lo, veth, docker, br |
+| 1 | Is the box healthy right now? | Uptime, running containers, CPU, memory, load, GPU power, CPU and GPU temperature — stats with sparklines |
+| 2 | How was the day? | CPU by mode (share of all cores, idle excluded) and memory used / cache / available, with swap as a dashed line |
+| 3 | Who is using it? | Top 10 containers by working-set memory and by CPU (`topk` over cAdvisor series) |
+| 4 | Is anything running hot or thrashing? | CPU package, NVMe and GPU temperatures; read/write throughput per disk |
+| 5 | Where does the space and the traffic go? | Used space per disk; the physical link against the WireGuard tunnel; GPU, NVENC and NVDEC load with power on a 0–160 W axis |
 
-Cost is parameterised so anyone forking the dashboard sets their own electricity price. Default is `2.0` (matching mainland-Europe order of magnitude) but the template variable accepts any float.
+Two details worth stealing:
+
+- **Disks are named by mount point.** `node_disk_*` only knows `sda`/`sdb`, and those letters can swap between boots. The disk panels join on the device label from `node_filesystem_size_bytes`, then `label_replace` the mount point into a friendly name — so "media HDD" stays the media disk whatever the kernel calls it.
+- **The VPN is visible in the network panel.** node-exporter runs in a container network, so its `eth0` is the container's own interface. cAdvisor's root cgroup (`id="/"`) reports the host's real interfaces, which puts `eth0` and `wg0-mullvad` side by side: internet traffic appears on the tunnel, and `eth0` carries the encrypted tunnel plus LAN traffic.
+- **Hidden constants instead of edits.** `media_mount`, `storage_mount` and `exclude` are constant template variables. A fork changes three values instead of rewriting queries, and the published capture can leave a personal service out of the top lists without touching the live queries.
 
 ### How the Homepage cards work
 

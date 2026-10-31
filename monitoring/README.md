@@ -1,19 +1,17 @@
 # Observability stack
 
 Prometheus + Grafana + three exporters (node, nvidia-gpu, cadvisor)
-running as containers in `docker/compose.yml`. Scaphandre (host power via
-RAPL) was part of the set until 2026-07-04; its scrape job is left
-commented out in `prometheus.yml.example`. This directory
-holds **example configs and the provisioned dashboard** — at deploy time
-they get rsync'd into the live appdata tree.
+running as containers in `docker/compose.yml`. This directory holds
+**example configs and the provisioned dashboard** — at deploy time they
+are copied into the live appdata tree.
 
 <p align="center">
-  <img src="../docs/img/grafana-overview.png" alt="Grafana — Homelab Overview dashboard with twelve panels: total/CPU/GPU power, GPU temperature, power-draw timeseries, 24 h kWh + cost, uptime, CPU, memory, disk, network" width="900"/>
+  <img src="../docs/img/grafana-overview.png" alt="Grafana — Homelab Overview with host stats, CPU and memory over 24 hours, top containers by memory and CPU, GPU load with NVENC sessions, temperatures, disk throughput, filesystems and network" width="900"/>
 </p>
 
-> The screenshot is taken from an ephemeral demo stack (see [`demo/`](demo/))
-> with synthetic metrics — never live data. Same dashboard JSON, fabricated
-> values, English locale forced.
+> Captured from the live Grafana on 2026-10-31 with real data from the
+> last 24 hours. The `exclude` constant hides one personal service from
+> the top lists; nothing else was edited.
 
 ## Layout
 
@@ -56,8 +54,10 @@ docker compose up -d prometheus grafana node-exporter nvidia-gpu-exporter cadvis
 ```
 
 Login at `http://${LAN_IP}:3001` with `GRAFANA_ADMIN_USER` /
-`GRAFANA_ADMIN_PASSWORD` from `.env`. The "Homelab — Overview"
-dashboard appears under Dashboards → General automatically.
+`GRAFANA_ADMIN_PASSWORD` from `.env`. The "Homelab Overview"
+dashboard appears under Dashboards automatically. Three hidden constants
+adapt it to your host: `media_mount` and `storage_mount` (the two data
+disks) and `exclude` (a regex of containers to keep out of the top lists).
 
 ## Notes & gotchas
 
@@ -69,18 +69,20 @@ dashboard appears under Dashboards → General automatically.
   job-level `fallback_scrape_protocol: PrometheusText0.0.4`: Prometheus 3.x
   speaks OpenMetrics by default and Scaphandre still emits text format
   0.0.4, otherwise the scrape errors out with `text format parse error`.
-  The host-power panels in the dashboard stay empty without it.
 - **GPU exporter** needs `runtime: nvidia` and the NVIDIA Container
   Toolkit on the host. Without a GPU, drop both the exporter and the
   `nvidia-gpu` scrape job — the dashboard panels degrade gracefully (no
   data) instead of breaking.
-- **cadvisor** can be heavy on systems with many short-lived containers.
+- **Disks are matched by mount point, not by `sdX` name.** The disk panels
+  join `node_disk_*` to `node_filesystem_*` through the device label, so a
+  reordered `sda`/`sdb` after a reboot cannot swap the legends.
+- **cadvisor** can be heavy — on this host it is the largest single memory
+  and CPU consumer, as the top-container panels show.
   If kernel CPU spikes, drop `--housekeeping_interval` from defaults
   (1 s → 30 s) via the command line.
 - **Reload Prometheus without restart** —
   `curl -X POST http://${LAN_IP}:9090/-/reload` after editing
   `prometheus.yml`.
-- **Dashboard variable** `$ELECTRICITY_PRICE` (default `2.0`) drives the
-  "Energy cost 24h" panel. Override per-session in the Grafana UI or
-  edit the JSON's `templating.list[0].current.value` to bake in a new
-  default.
+- **Dashboard constants** `media_mount`, `storage_mount` and `exclude`
+  are hidden template variables. Change their `query` values in the JSON
+  to match your host before provisioning.

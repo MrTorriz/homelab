@@ -45,7 +45,7 @@ At Swedish electricity prices (~2.50 SEK/kWh including grid + tax during typical
 900 kWh × 2.50 SEK ≈ 2 250 SEK / year
 ```
 
-Real cost moves with spot prices. During cold winter spikes this doubles; in summer it halves. The Grafana dashboard's *Energy cost (24h)* panel multiplies live kWh by `$ELECTRICITY_PRICE` (template variable, default 2.0) so you can dial in your own tariff.
+Real cost moves with spot prices. During cold winter spikes this doubles; in summer it halves. The earlier Grafana dashboard had an energy-cost panel; it was retired along with host power metering, and only GPU power is measured today.
 
 **Why it stays low:** the box is a single 6-core Coffee Lake build, not a rack of enterprise gear. The GPU is only powered up by Jellyfin transcodes and Immich ML inference; idle GPU draw is ~20 W.
 

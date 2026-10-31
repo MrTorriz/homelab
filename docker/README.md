@@ -95,12 +95,12 @@ These settings live in the Immich Postgres DB; export with `immich-cli` or set v
 Five containers ship a complete Prometheus + Grafana pipeline:
 
 - **Prometheus** (`:9090`) — TSDB, 90 d retention (`PROMETHEUS_RETENTION`), scrapes every 15 s.
-- **Grafana** (`:3001`) — auto-provisioned datasource and the `Homelab — Overview` dashboard from `../monitoring/grafana/dashboards/`.
+- **Grafana** (`:3001`) — auto-provisioned datasource and the `Homelab Overview` dashboard from `../monitoring/grafana/dashboards/`.
 - **node-exporter** — host CPU, memory, disk, network, uptime via `/proc` + `/sys` bind mounts.
 - **nvidia-gpu-exporter** (`runtime: nvidia`) — GPU watts, temperature, memory and utilisation. Drop both this and the `nvidia-gpu` scrape job if you have no GPU; the dashboard panels degrade gracefully.
 - **cadvisor** — per-container CPU, memory, network and disk I/O, limited to Docker containers (`--docker_only=true`).
 
-The dashboard surfaces GPU power and temperature, a 24 h kWh integral, an electricity-cost panel parameterised by `$ELECTRICITY_PRICE`, plus standard host stats. Host CPU/RAM power is not collected (Scaphandre was removed on 2026-07-04), so the host-power panels stay empty. Provisioning configs and the dashboard JSON live in `../monitoring/` — `cp` them into `${APPDATA_DIR}/{prometheus,grafana}/...` before first launch (full instructions in `../monitoring/README.md`). Reload Prometheus without a restart with `curl -X POST http://${LAN_IP}:9090/-/reload`.
+The dashboard answers five questions on one screen: host health right now, the last 24 hours of CPU and memory, which containers use the most memory and CPU, temperatures and disk activity, and where space and traffic go — including the physical link against the VPN tunnel. Provisioning configs and the dashboard JSON live in `../monitoring/` — `cp` them into `${APPDATA_DIR}/{prometheus,grafana}/...` before first launch (full instructions in `../monitoring/README.md`). Reload Prometheus without a restart with `curl -X POST http://${LAN_IP}:9090/-/reload`.
 
 Uptime Kuma complements this with HTTP checks of the web services, so a service that is up in Docker but not answering still shows red.
 
