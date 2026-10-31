@@ -79,8 +79,8 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 </p>
 
 <p align="center">
-  <img src="docs/img/grafana-overview.png" alt="Grafana — top of the Homelab Overview dashboard with power gauges, a power timeline, energy, cost and uptime" width="900"/><br/>
-  <sub><b>Grafana</b> — rendered from the demo stack in <code>monitoring/demo/</code> with synthetic values; the same dashboard JSON runs live.</sub>
+  <img src="docs/img/grafana-overview.png" alt="Grafana — Homelab Overview with host stats, CPU and memory over 24 hours, top containers, GPU load with NVENC sessions, temperatures, disks and network" width="900"/><br/>
+  <sub><b>Grafana</b> — live capture of the Homelab Overview dashboard (2026-10-31, last 24 hours): host, containers, GPU, disks and network on one screen. JSON: <a href="monitoring/grafana/dashboards/homelab-overview.json">homelab-overview.json</a>.</sub>
 </p>
 
 <details>
@@ -117,7 +117,7 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 ├── homepage/            # Homepage config, styles and the two Glance instances
 ├── scripts/             # healthcheck, VPN checks, backup/, security/, monitoring/, maintenance/, motd/, systemd/
 ├── security/            # UFW baseline, fail2ban, SSH, sysctl, VPN kill-switch, hardening checklist, Suricata reference
-├── monitoring/          # Prometheus scrape config, Grafana provisioning + dashboard, demo stack
+├── monitoring/          # Prometheus scrape config, Grafana provisioning and the overview dashboard
 ├── docs/                # Architecture, security, observability, metrics, runbook, DR, decisions, lessons learned
 └── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
 ```
