@@ -1,85 +1,112 @@
 #!/usr/bin/env bash
-# offsite-backup.sh — Encrypted offsite backup to a remote (e.g. Google Drive) via rclone.
-# Requires: rclone configured with an encrypted remote, ${RCLONE_REMOTE}, VPN up via Mullvad.
-# Run as root from cron; uses a lockfile to prevent overlap.
+# ─────────────────────────────────────────────────────────────
+# offsite-backup.sh — nightly encrypted copy of everything a rebuild needs,
+# pushed with rclone to a crypt remote, so the provider only sees ciphertext.
+#
+#   1. Refuse to start unless the host's exit is the VPN.
+#   2. Take fresh database dumps first (dumps.lib.sh); any failed or empty
+#      dump stops the run before a single file is synced.
+#   3. Sync appdata, compose files, secrets and config. No --ignore-errors:
+#      when the source cannot be listed, the destination is left alone, and
+#      --max-delete caps the damage of an unexpected mass deletion.
+#   4. Touch .last_successful_offsite only after a run with zero errors —
+#      backup-verify.sh and the healthcheck read that marker, and a marker
+#      touched after a failed run would report a broken backup as fresh.
+#
+# Bulk data on the HDDs (photos, file sync, media) is not part of this job.
+# Shares the "backup_pipeline" lock with backup-appdata.sh.
+# Run as root from cron. Requires: rclone with a crypt remote, docker, sqlite3.
+# ─────────────────────────────────────────────────────────────
 set -uo pipefail
 . "$(dirname "$0")/../lib.sh"
+. "$(dirname "$0")/dumps.lib.sh"
+single_instance backup_pipeline
 
 APPDATA_DIR="${APPDATA_DIR:-$HOME/docker/appdata}"
-LOG_DIR="${LOG_DIR:-$HOME/logs/rclone}"
-LOG_FILE="$LOG_DIR/rclone_offsite_$(date +%Y%m%d).log"
+COMPOSE_DIR="${COMPOSE_DIR:-$HOME/homelab/docker}"
+DB_DUMP_DIR="${DB_DUMP_DIR:-$APPDATA_DIR/db_dumps}"
+LOG_DIR="${LOG_DIR:-$HOME/logs}"
+RCLONE_LOG_DIR="${RCLONE_LOG_DIR:-$LOG_DIR/rclone}"
 RCLONE_CONFIG="${RCLONE_CONFIG:-$HOME/.config/rclone/rclone.conf}"
-RCLONE_REMOTE="${RCLONE_REMOTE:-gdrive_crypt:homelab_backup}"
-RC="rclone --config ${RCLONE_CONFIG}"
-LOCKFILE="${LOCKFILE:-/tmp/offsite_backup.lock}"
+RCLONE_REMOTE="${RCLONE_REMOTE:-offsite-crypt:homelab-backup}"
+MAX_DELETE="${MAX_DELETE:-500}"
+LOG_FILE="$RCLONE_LOG_DIR/rclone_offsite_$(date +%Y%m%d).log"
+RC=(rclone --config "$RCLONE_CONFIG")
 ERRORS=0
+mkdir -p "$RCLONE_LOG_DIR" "$DB_DUMP_DIR"
 
-mkdir -p "$LOG_DIR"
-
-if [ -f "$LOCKFILE" ]; then
-  echo "--- Backup aborted: already running (PID $(cat "$LOCKFILE")) ---" | tee -a "$LOG_FILE"
+fail_before_sync() {
+  echo "--- Backup aborted: $1 $(date) ---" | tee -a "$LOG_FILE" >&2
+  touch "$RCLONE_LOG_DIR/.last_attempt_offsite"
+  ntfy_send "Offsite backup FAILED" "$1, nothing was synced" "high" "warning"
   exit 1
-fi
-echo $$ > "$LOCKFILE"
-trap 'rm -f "$LOCKFILE"' EXIT
+}
 
-# VPN gate — abort if Mullvad not connected
-if ! curl -s --max-time 10 https://am.i.mullvad.net/connected | grep -q "You are connected"; then
-  ntfy_send "Offsite backup FAILED" "VPN not connected — backup aborted" "high" "warning"
-  echo "--- Backup aborted: VPN not connected $(date) ---" | tee -a "$LOG_FILE"
-  exit 1
-fi
+# Capture the answer instead of piping it into grep -q: under pipefail an
+# early-closing grep can SIGPIPE curl and abort on a VPN error that isn't real.
+VPN_RESP=$(curl -s --max-time 10 https://am.i.mullvad.net/connected)
+[[ "$VPN_RESP" == *"You are connected"* ]] || fail_before_sync "VPN not connected"
 
 echo "--- Backup started $(date) ---" | tee -a "$LOG_FILE"
 
 do_sync() {
-  local label="$1" src="$2" dst="$3"
-  shift 3
+  local label="$1" src="$2" dst="$3"; shift 3
   echo "→ $label" | tee -a "$LOG_FILE"
-  $RC sync "$src" "$RCLONE_REMOTE/$dst" \
-    --skip-links \
-    --ignore-errors \
-    --log-level INFO \
-    "$@" \
-    2>&1 | tee -a "$LOG_FILE"
+  "${RC[@]}" sync "$src" "$RCLONE_REMOTE/$dst" --skip-links --max-delete "$MAX_DELETE" \
+    --log-level INFO "$@" 2>&1 | tee -a "$LOG_FILE"
+  [[ ${PIPESTATUS[0]} -ne 0 ]] && ((ERRORS++))
+}
+do_copy() {
+  local label="$1" src="$2" dst="$3"; shift 3
+  echo "→ $label" | tee -a "$LOG_FILE"
+  "${RC[@]}" copy "$src" "$RCLONE_REMOTE/$dst" --skip-links --log-level INFO "$@" 2>&1 | tee -a "$LOG_FILE"
   [[ ${PIPESTATUS[0]} -ne 0 ]] && ((ERRORS++))
 }
 
-# CRITICAL — credentials and source-of-truth
-do_sync "SSH keys"       "$HOME/.ssh"            ssh
-do_sync "rclone config"  "$HOME/.config/rclone"  rclone
-do_sync "git repos"      "$HOME/git"             git
+# 0. Consistent database dumps, published into appdata/db_dumps
+DUMP_STAGE=$(mktemp -d "$RCLONE_LOG_DIR/.dump-stage.XXXXXXXX") || fail_before_sync "could not create the dump staging directory"
+abort_dump() { rm -rf -- "$DUMP_STAGE"; fail_before_sync "$1"; }
+echo "→ database dumps" | tee -a "$LOG_FILE"
+dump_databases "$DUMP_STAGE" "$DB_DUMP_DIR" abort_dump 2>>"$LOG_FILE"
+rmdir -- "$DUMP_STAGE" || fail_before_sync "could not close the dump staging directory"
 
-# Dotfiles
-echo "→ Dotfiles" | tee -a "$LOG_FILE"
+# 1. Core: all appdata, minus live databases (covered by the dumps), logs
+#    and state that changes while rclone reads it. A file-level copy of a
+#    live time-series database is inconsistent anyway; its config is kept.
+do_sync "appdata" "$APPDATA_DIR" appdata \
+  --exclude "**/logs/**" --exclude "**/*.log" --exclude "**/*.db-wal" --exclude "**/*.db-shm" \
+  --exclude "uptime-kuma/kuma.db*" --exclude "tdarr/server/Tdarr/DB2/SQL/**" \
+  --exclude "prometheus/data/**" \
+  --exclude "cloudflare-egress/cfwarp_*.txt*" --exclude "cloudflare-egress/snapshots/**"
+do_sync "compose + .env" "$COMPOSE_DIR" docker
+
+# 2. Secrets and config that a rebuild needs
+do_copy "scripts/.env"  "$HOME/scripts/.env" scripts
+do_sync "ssh"           "$HOME/.ssh"          ssh
+do_sync "config"        "$HOME/.config"       config
+do_sync "wireguard"     /etc/wireguard        wireguard
+# The VPN client's device key and settings: without them a restored host
+# has to register as a new device.
+do_sync "mullvad state" /etc/mullvad-vpn      mullvad-vpn
+
+# 3. Dotfiles
 for f in .bashrc .gitconfig .profile; do
-  $RC copy "$HOME/$f" "$RCLONE_REMOTE/dotfiles/$f" --log-level INFO 2>&1 | tee -a "$LOG_FILE"
+  do_copy "dotfile $f" "$HOME/$f" dotfiles
 done
 
-# IMPORTANT — app configs
-do_sync "AdGuard"        "$APPDATA_DIR/adguard"        appdata/adguard
-do_sync "NPM"            "$APPDATA_DIR/npm"            appdata/npm         --exclude "data/logs/**"
-do_sync "Homepage"       "$APPDATA_DIR/homepage"       appdata/homepage    --exclude "icons/**" --exclude "public/images/**"
-do_sync "Glance"         "$APPDATA_DIR/glance"         appdata/glance
-do_sync "qBittorrent"    "$APPDATA_DIR/qbittorrent"    appdata/qbittorrent --exclude "BT_backup/**" --exclude "ipc-socket"
-do_sync "Audiobookshelf" "$APPDATA_DIR/audiobookshelf" appdata/audiobookshelf
-do_sync "Bazarr backup"  "$APPDATA_DIR/bazarr/backup"  appdata/bazarr_backup
+# 4. Yesterday's and older logs. Today's rclone logs are still growing and
+#    would fail with "sizes differ".
+do_sync "logs" "$LOG_DIR" logs --exclude "rclone/rclone_*_$(date +%Y%m%d).log"
 
-# IMPORTANT — *arr databases (only .db, skip WAL/cache/logs)
-for app in sonarr radarr lidarr prowlarr; do
-  do_sync "$app DB" "$APPDATA_DIR/$app" "appdata/$app" --include "*.db"
-done
+# The dumps are regenerated every run.
+rm -f -- "$DB_DUMP_DIR"/*.sql "$DB_DUMP_DIR"/*.sqlite3
 
-# CRITICAL — photo library
-do_sync "Immich photos" "${STORAGE_DIR:-/mnt/storage}/immich-photos" immich-photos
-
-# Result
-if [[ $ERRORS -eq 0 ]]; then
+if (( ERRORS == 0 )); then
   echo "--- Backup done OK $(date) ---" | tee -a "$LOG_FILE"
-  ntfy_send "Offsite backup done" "Encrypted snapshot uploaded" "default" "white_check_mark"
+  touch "$RCLONE_LOG_DIR/.last_successful_offsite"
 else
   echo "--- Backup done with $ERRORS errors $(date) ---" | tee -a "$LOG_FILE"
-  ntfy_send "Offsite backup: $ERRORS errors" "See $LOG_FILE for details" "high" "warning"
+  ntfy_send "Offsite backup: $ERRORS errors" "See $LOG_FILE" "high" "warning"
 fi
-
-touch "$LOG_DIR/.last_successful_offsite"
+touch "$RCLONE_LOG_DIR/.last_attempt_offsite"
+exit $(( ERRORS > 0 ? 1 : 0 ))

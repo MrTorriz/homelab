@@ -34,7 +34,7 @@ kept as history, not as current state.
 | Event watchers (systemd) | `docker-watcher`, `file-watcher`, `npm-monitor`, `docker-events-ntfy` — all active | `systemctl is-active …` |
 | Cron | 19 user lines + 5 root lines | `crontab -l; sudo crontab -l` |
 | Healthcheck | 65 checks every 15 min, all passing on 2026-10-30 (the public `scripts/healthcheck.sh` is a trimmed version) | live `healthcheck.sh` |
-| ntfy callers in this repo | **18** scripts call `ntfy_send` (backup 3, maintenance 3, monitoring 3, security 7, `healthcheck.sh`, `vpn-watchdog.sh`) | `grep -l ntfy_send $(git ls-files 'scripts/*.sh' 'scripts/*.py') \| grep -v lib.sh` — `lib.sh` defines the shim |
+| ntfy callers in this repo | **19** scripts call `ntfy_send` (backup 4, maintenance 3, monitoring 3, security 7, `healthcheck.sh`, `vpn-watchdog.sh`) | `grep -l ntfy_send $(git ls-files 'scripts/*.sh' 'scripts/*.py') \| grep -v lib.sh` — `lib.sh` defines the shim |
 | Host uptime | 16 days | `uptime -p` |
 
 ## Not re-measured

@@ -46,7 +46,7 @@
 # Weekly — Sunday 09:00 security digest (fail2ban, lynis, ufw, virus)
 0 9 * * 0       $HOME/scripts/security/security-digest.sh
 
-# Weekly — Monday 07:00 verify backups (local + offsite freshness + gaps)
+# Weekly — Monday 07:00 verify backups (archive + dump integrity, off-site freshness, gaps)
 0 7 * * 1       $HOME/scripts/backup/backup-verify.sh
 
 # Weekly — Monday 08:00 SSL cert expiry check via NPM API
@@ -57,12 +57,20 @@
 
 # ─── ROOT CRON ───────────────────────────────────────────────────────────────
 # Install with: sudo crontab -e
+# Root's $HOME is /root, so point the jobs at the operator's paths first:
+#   APPDATA_DIR=/home/operator/docker/appdata
+#   LOG_DIR=/home/operator/logs
+#   RCLONE_CONFIG=/home/operator/.config/rclone/rclone.conf
+# The three backup jobs share one lock and never overlap.
 #
-# Daily appdata snapshot at 04:00 (needs root for full container access)
+# Nightly appdata archive at 04:00 — database dumps first, published only when all succeed
 # 0 4 * * *       /opt/homelab/scripts/backup/backup-appdata.sh
 #
-# Daily encrypted offsite push at 04:30 (rclone to remote, requires VPN up)
+# Nightly encrypted off-site sync at 04:30 (rclone crypt remote, requires VPN up)
 # 30 4 * * *      /opt/homelab/scripts/backup/offsite-backup.sh
+#
+# Weekly encrypted system archive — Sunday 12:00 (root, /boot, EFI, package list)
+# 0 12 * * 0      /opt/homelab/scripts/backup/systemfiles-offsite.sh
 #
 # ─── SYSTEMD (NOT CRON) ──────────────────────────────────────────────────────
 # Long-running daemons — installed as systemd units, not cron entries.

@@ -79,7 +79,7 @@ The original setup was deliberately minimal — Glances + Scrutiny + a bash heal
 So the stack runs **three independent monitoring layers** on the host:
 
 1. **Metrics** — Prometheus (90 d retention, 15 s scrape) + Grafana, fed by node-exporter, cAdvisor and nvidia-gpu-exporter.
-2. **Events** — 18 ntfy callers in `scripts/` (cron jobs + systemd daemons + PAM hooks). Answers "what just happened that I need to know about?"
+2. **Events** — 19 ntfy callers in `scripts/` (cron jobs + systemd daemons + PAM hooks). Answers "what just happened that I need to know about?"
 3. **Health** — the bash `healthcheck.sh` every 15 minutes plus Uptime Kuma's HTTP checks. Answers "is anything broken?", including the services that report healthy while serving errors.
 
 If Prometheus goes down, ntfy alerters still fire and the healthcheck still runs. The remaining shared failure point is the host itself, which is why **Cloudflare's tunnel-health e-mail** is configured as a fourth signal: if the tunnel goes down or degrades, an alert arrives even when the box is dead.

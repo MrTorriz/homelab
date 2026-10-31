@@ -41,3 +41,33 @@ log_rotate() {
   (( lines > max )) || return 0
   tail -n "$max" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 }
+
+single_instance() {
+  # Hold a kernel lock (flock on FD 9) for the lifetime of the script.
+  # Jobs that share a NAME never overlap; the backup and off-site jobs use
+  # "backup_pipeline" because both write the same database dump directory.
+  # The kernel releases the lock when the process dies, even after kill -9,
+  # so a crash can never leave a stale lock behind.
+  local name="${1:-$(basename "$0" .sh)}"
+  local lockdir="${LOCK_DIR:-/run/lock}"
+  [[ -w "$lockdir" ]] || lockdir="${TMPDIR:-/tmp}"
+  local lockfile="$lockdir/${name}.lock"
+
+  # Test writability first: 'exec 9>' on an unwritable path can end the
+  # shell instead of returning an error. Running without a lock is better
+  # than a backup that never runs.
+  if ! { : >>"$lockfile"; } 2>/dev/null; then
+    echo "[$(date '+%Y-%m-%d %H:%M')] WARN: cannot create $lockfile, running without a lock" >&2
+    return 0
+  fi
+
+  exec 9>>"$lockfile"
+  if ! flock -n 9; then
+    echo "[$(date '+%Y-%m-%d %H:%M')] $name is already running, skipping this run"
+    if [[ $name == backup_pipeline ]]; then
+      ntfy_send "Backup job skipped" \
+        "$(basename "$0") did not start: an earlier backup job is still running." high warning
+    fi
+    exit 0
+  fi
+}

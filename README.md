@@ -20,7 +20,7 @@
 - **Nothing leaves outside the VPN** — the whole host egresses through Mullvad in lockdown mode, IPv6 is off, and a scheduled check asks an outside service which exit the host *and* the torrent client actually use.
 - **No inbound ports** — external access rides an outbound Cloudflare Tunnel behind Cloudflare Access and Google OAuth. The tunnel itself is opened from inside the VPN, through a small WARP sidecar.
 - **Defense in depth** — UFW default-deny, fail2ban, `no-new-privileges` on all 46 containers, none privileged, two-tier Docker socket proxy, memory caps on everything that can balloon.
-- **Monitoring that reports its own blind spots** — Prometheus/Grafana metrics, 18 event-driven and scheduled ntfy alerters, a 65-check healthcheck every 15 minutes, Uptime Kuma, and a tunnel-health e-mail that still arrives if the host is dead.
+- **Monitoring that reports its own blind spots** — Prometheus/Grafana metrics, 19 event-driven and scheduled ntfy alerters, a 65-check healthcheck every 15 minutes, Uptime Kuma, and a tunnel-health e-mail that still arrives if the host is dead.
 - **Backups that have been restored** — nightly archives with database dumps, encrypted off-site copies, and restore drills of all six databases.
 
 ### Verified snapshot — 2026-10-31

@@ -33,7 +33,7 @@ Heavier automation lives one level deeper, grouped by intent:
 
 | Directory | What's in it |
 |---|---|
-| `backup/` | Daily appdata snapshot, weekly verify, encrypted offsite push via rclone |
+| `backup/` | Nightly appdata archive with consistent database dumps, nightly encrypted off-site sync, weekly encrypted system archive, weekly archive and dump verification |
 | `security/` | Aggregated read-only audit (`security-check.sh` + lib), weekly digest, cert expiry, virus scan, UFW summary |
 | `monitoring/` | Temperature watch, restart-loop alerter, real-time docker event watcher (systemd), Homepage stats generator |
 | `maintenance/` | Docker prune, log hygiene, weekly health report, storage report |
