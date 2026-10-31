@@ -26,10 +26,10 @@ Three copies, two media, one off-site.
 | **Live** | Host NVMe + data HDDs | Continuous | n/a |
 | **Local archive** | Storage HDD, separate from the system disk | Daily 04:00 UTC | [`scripts/backup/backup-appdata.sh`](../scripts/backup/backup-appdata.sh) |
 | **Off-site, encrypted** | rclone crypt to cloud storage | Daily 04:30 UTC | [`scripts/backup/offsite-backup.sh`](../scripts/backup/offsite-backup.sh) |
-| **Off-site system archive** | rclone crypt to cloud storage | Weekly | live-only |
+| **Off-site system archive** | rclone crypt to cloud storage | Weekly, Sunday 12:00 UTC | [`scripts/backup/systemfiles-offsite.sh`](../scripts/backup/systemfiles-offsite.sh) |
 | **Verification** | Integrity and freshness checks | Weekly, Monday 07:00 UTC | [`scripts/backup/backup-verify.sh`](../scripts/backup/backup-verify.sh) |
 
-The published scripts are simplified versions of the live ones. The live backup takes **six database dumps first** (Postgres for Immich, Nextcloud and Miniflux; SQLite for the services that use it), checks every dump and the finished archive before it is published, and aborts loudly instead of shipping a partial archive. A missing success is treated like a failure: the healthcheck alerts if an off-site job has not completed for more than 36 hours.
+The published scripts are sanitized ports of the live ones. Both nightly jobs take **consistent database dumps first** — `pg_dumpall` for the Postgres containers, `sqlite3 .backup` for the SQLite services ([`dumps.lib.sh`](../scripts/backup/dumps.lib.sh)) — and publish them only when every dump succeeded and is non-empty, with a manifest of what was written. The archive is written under a temporary name and published with a rename; a failed dump or a failed `tar` aborts loudly instead of shipping a partial backup, and the weekly verifier checks every listed dump inside the newest archive ([`verify-backup-archive.py`](../scripts/backup/verify-backup-archive.py)). A missing success is treated like a failure: the success marker is only written after an error-free run, and the healthcheck alerts if an off-site job has not completed for more than 36 hours.
 
 ### What's in the backup
 
@@ -42,9 +42,8 @@ The published scripts are simplified versions of the live ones. The live backup 
 
 - Media files (`${MEDIA_DIR}`) — replaceable, too large to copy off-site economically
 - Bulk downloads and transcoder cache on `${STORAGE_DIR}`
+- Photos and synced files on the storage HDD (the Immich library and Nextcloud data) — they stay on their own disk and are not part of the nightly off-site job
 - Container images — pulled fresh from registries on restore (the self-built sidecar is rebuilt from its Dockerfile)
-
-Nextcloud user data under `${STORAGE_DIR}/Nextcloud/` and the Immich library *are* user data and are covered.
 
 ---
 

@@ -62,7 +62,7 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` as
 |---|---|
 | Service binding | Containers bind only to `${LAN_IP}`, never `0.0.0.0` |
 | Reverse proxy | All web services routed via Nginx Proxy Manager with LE wildcard cert |
-| Network IDS | Not currently deployed. Reference config in `security/suricata/` (see below) |
+| Network IDS | None — a known gap. A passive IDS ran on the original install; see [decisions](decisions.md#network-ids-tried-and-retired) |
 
 ### 3. Host
 
@@ -93,37 +93,6 @@ The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` as
 | Backup | Nightly archive of `${APPDATA_DIR}` with database dumps, encrypted off-site copy, weekly verification job, restore drills |
 | Downloads | qBittorrent skips executables, scripts, archives and disk images by file type — nothing in a media download should ever be one |
 
-## Network IDS — Suricata (reference config; not currently deployed)
-
-> Suricata ran as a system service on the original bare-metal install until June 2026. It was not redeployed during the VM period or after the return to bare metal (checked 2026-10-31: `suricata` and `suricata-ntfy` inactive). The config in `security/suricata/` and the text below are kept as reference; whether to bring it back is an open decision.
-
-UFW stops what shouldn't get in. fail2ban stops what's hammering known login surfaces. Neither tells you anything about what's already inside, talking outbound, or doing something quietly weird on the LAN. Suricata filled that gap.
-
-**Why network IDS, not just host IDS.** A host IDS sees what one machine does. A network IDS sees what every device on the LAN does *to each other and to the internet*. On a homelab where IoT, TVs, phones, and bulk storage all share the same broadcast domain, that lateral and outbound visibility matters more than another HIDS.
-
-**Where it lived.** Suricata ran as a system service on the Docker host, listening passively on the LAN-facing interface via `af-packet` (no inline blocking, no MITM, no risk of degrading throughput). Its `HOME_NET` is the RFC1918 LAN; everything else is `EXTERNAL_NET`. Because it's passive, the worst case if Suricata crashes is "no IDS for a few minutes" — never "the LAN went down".
-
-**What it watches for.** The active ruleset is the Emerging Threats Open feed (refreshed via `suricata-update`), which is grouped into categories. The ones enabled here:
-
-- **Exploit and exploit-kit** — known CVE exploitation patterns and drive-by-download kits
-- **Malware and trojan** — command-and-control beacons, known bad host indicators, payload signatures
-- **Attack-response** — traffic patterns characteristic of post-exploitation (reverse shells, data exfil shapes)
-- **Scan and dshield** — port scanners, mass-recon tools, IPs already on public block lists
-- **Web-attacks and SQL** — injection/RCE patterns against HTTP services
-- **DNS** — DGA-style queries, suspicious TXT lookups, tunnelling
-- **Policy and inappropriate** — policy violations (e.g. cleartext credentials, Tor)
-- **Mobile-malware** — patterns relevant to the phones and TVs on the LAN
-
-**How alerts surface.** Suricata writes `fast.log` (compact one-line alerts) and `eve.json` (full structured event log) under `/var/log/suricata`. A small Python service (`suricata-ntfy.service`, hardened with `NoNewPrivileges`, `ProtectSystem=strict`, read-only `${APPDATA_DIR}`) tails `fast.log`, filters to severity 1–2, dedupes, and pushes notifications to ntfy. By the time an attention-worthy event reaches the phone, it's already been triaged out of the firehose.
-
-**Honest limits.** TLS-encrypted traffic is opaque — Suricata sees the SNI, JA3 fingerprint, certificate, and timing, but not the payload. That's enough to flag "this device is talking to a known C2 hostname" but not enough to read what's said. Inline blocking is deliberately off; the trade-off is that Suricata detects, fail2ban and UFW respond. For a single-host LAN this split (perimeter / brute-force / behavioural) is enough.
-
-<p align="center">
-  <img src="img/alerting.gif" alt="fail2ban status + IDS fast.log tail with example alerts" width="780"/>
-  <br/>
-  <sub>Synthetic demo (<code>scripts/demo/</code>); the Suricata event shown here is not currently deployed.</sub>
-</p>
-
 ## Event-driven alerting
 
 Earlier iterations of this stack relied on a single periodic healthcheck — every 15 minutes a bash script asked "is anything broken?" and pushed to ntfy if so. That was fine for "did something stop running" but gave away the entire game on time-sensitive signals. A successful SSH login at 03:17 doesn't need a 15-minute window to be interesting; it needs to be on the phone in seconds.
@@ -137,7 +106,6 @@ So the alerting model is now event-driven, layered on top of the periodic health
 | `sudo-notify` | Interactive sudo invocation | PAM `pam_exec` on `sudo`, filtered to TTYs only (skips cron/scripts) | ntfy (high) |
 | `docker-events-ntfy` | Container `start`/`stop`/`die`/`oom` | live-only systemd monitor; companion not published in this showcase | ntfy |
 | `npm-monitor` | Path scans, 401/403/404 spam, suspect user agents | systemd unit tailing NPM access logs | ntfy |
-| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — currently not deployed | ntfy |
 | `file-watcher` | Change in critical file paths | systemd unit | ntfy |
 
 Every successful SSH login pushes, not just failed ones — the reasoning and the admin-noise filtering are in [`observability.md`](observability.md#admin-noise-filtering).
@@ -154,7 +122,6 @@ All of this runs through a single `ntfy_send` shim in `lib.sh`, so topic, priori
 | NPM access | NPM logs → fail2ban + npm-monitor → ntfy | 14 days |
 | Container lifecycle | live-only Docker event monitor → ntfy | live |
 | Container stdout | Docker logs (json-driver, capped) | 7 days |
-| Suricata (when deployed) | `fast.log` + `eve.json` under `/var/log/suricata`; severity 1–2 → ntfy | not currently deployed |
 | Healthcheck alerts | ntfy (push to phone) | – |
 | SMART | Scrutiny + InfluxDB | 90 days |
 

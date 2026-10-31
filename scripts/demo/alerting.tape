@@ -1,7 +1,7 @@
 # alerting.tape — generates docs/img/alerting.gif
 #
-# Demonstrates the event-driven security layer: fail2ban + Suricata.
-# Uses scripts/demo/alerting-demo.sh — all IPs are TEST-NET-3 placeholders.
+# Demonstrates the event-driven security layer: fail2ban and the ntfy event feed.
+# Uses scripts/demo/alerting-demo.sh — sources are placeholders.
 #
 # Build with:  vhs scripts/demo/alerting.tape
 

@@ -9,7 +9,7 @@ How the homelab knows itself: what's measured, what triggers a push, and what ev
 | Layer | Question it answers | Where it lives |
 |---|---|---|
 | **Metrics** | "What's the host doing right now?" | Prometheus + Grafana (`monitoring/`) |
-| **Events** | "What just happened that I need to know about?" | 18 ntfy callers (`scripts/`), six of them event-driven |
+| **Events** | "What just happened that I need to know about?" | 19 ntfy callers (`scripts/`), six of them event-driven |
 | **Health** | "Is anything broken?" | `healthcheck.sh` cron, Uptime Kuma, Glances/Scrutiny dashboards |
 
 The metrics layer exists because a periodic healthcheck only catches failures — not *trends*. You don't notice that GPU temp creeps up 4 °C per month until something dies; metrics make that obvious before it becomes an event.
@@ -75,14 +75,14 @@ No sidecar pre-aggregates anything — Homepage talks to Prometheus, Prometheus 
 
 ---
 
-## Events layer — 18 ntfy callers
+## Events layer — 19 ntfy callers
 
 The metrics layer answers "what is happening?". The events layer answers "what *just happened* that I need to know about *right now*?".
 
 <p align="center">
-  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, fail2ban ban, IDS signature, file-watcher" width="780"/>
+  <img src="img/alerting.gif" alt="Live tail of ntfy events — SSH login, sudo, proxy scan, file-watcher" width="780"/>
   <br/>
-  <sub>Synthetic demo (<code>scripts/demo/</code>); the Suricata event shown here is not currently deployed.</sub>
+  <sub>Synthetic demo (<code>scripts/demo/</code>); sources are placeholders.</sub>
 </p>
 
 The high-signal layer is the **event-driven security sources** — these are the ones that wake you up in the middle of the night:
@@ -92,7 +92,6 @@ The high-signal layer is the **event-driven security sources** — these are the
 | `ssh-login-notify` | every successful SSH session | PAM `pam_exec` on `sshd` | low if LAN, **urgent** if external |
 | `sudo-notify` | interactive sudo invocation | PAM `pam_exec` on `sudo` | high |
 | `fail2ban-notify` | IP banned/unbanned in any jail | fail2ban action hook | high on ban |
-| `suricata-ntfy` | IDS alert at severity 1–2 | systemd unit tailing `fast.log` — **not currently deployed** | high |
 | `docker-events-ntfy` | container start/stop/die/oom | live-only systemd monitor; companion not published in this showcase | mixed |
 | `npm-monitor` | path scans, 401 spam, sqlmap signatures | systemd unit tailing NPM access logs | high |
 | `file-watcher` | mutation in critical paths (sshd config, sudoers, cron, authorized_keys) | systemd unit on inotify | urgent |
@@ -110,11 +109,12 @@ In addition there are **operational alerters** that share the same ntfy infrastr
 | `security-digest` | weekly (Sun) | fail2ban + lynis + UFW summary |
 | `weekly-report` | weekly (Sun) | health snapshot |
 | `storage-report` | weekly (Mon) | disk growth |
-| `backup-verify` | weekly (Mon) | restore-test result |
+| `backup-verify` | weekly (Mon) | archive and dump integrity, off-site freshness |
 | `backup-appdata` | nightly | snapshot result |
 | `offsite-backup` | nightly | rclone push result |
+| `systemfiles-offsite` | weekly (Sun) | encrypted system archive result |
 
-Together that's **18 scripts in `scripts/`** calling a single shared `ntfy_send` shim (counted with `grep -l ntfy_send` minus `lib.sh`, which defines it — 2026-10-31), plus the fail2ban action. The interesting design choice in the event tier is that **every** successful SSH login pushes — not just failed ones. Failed logins are noise (UFW already drops most of them); successful logins are tripwires. If a notification arrives that you didn't initiate, you have seconds to react.
+Together that's **19 scripts in `scripts/`** calling a single shared `ntfy_send` shim (counted with `grep -l ntfy_send` minus `lib.sh`, which defines it — 2026-10-31), plus the fail2ban action. The interesting design choice in the event tier is that **every** successful SSH login pushes — not just failed ones. Failed logins are noise (UFW already drops most of them); successful logins are tripwires. If a notification arrives that you didn't initiate, you have seconds to react.
 
 ### What actually reaches the phone
 

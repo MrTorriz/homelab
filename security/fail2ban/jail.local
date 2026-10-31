@@ -18,5 +18,5 @@ logpath = %(sshd_log)s
 action  = %(action_)s
           ntfy
 
-# fail2ban handles SSH brute-force; Suricata handles network IDS at the host
-# level. Keeping the two systems' responsibilities split prevents racing.
+# fail2ban handles brute-force against SSH and the reverse proxy; event pushes
+# (SSH login, sudo, file changes) cover what a ban cannot.

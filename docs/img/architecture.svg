@@ -153,7 +153,7 @@
     <text x="257" y="630">socket-proxy</text>
     <text x="257" y="642" font-size="8" fill="#5a8fb8">read-only docker API</text>
     <text x="257" y="670">ntfy shim</text>
-    <text x="257" y="682" font-size="8" fill="#5a8fb8">18 callers · bearer</text>
+    <text x="257" y="682" font-size="8" fill="#5a8fb8">19 callers · bearer</text>
   </g>
 
   <!-- Apps sub-column header -->

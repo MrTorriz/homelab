@@ -13,9 +13,8 @@ paths to your layout if you keep them elsewhere (e.g. `$HOME/scripts/`).
 | `file-watcher.service` | Watches critical host files and pushes ntfy on changes | `security/file-watcher.sh` |
 
 Only installable units with a published companion script are kept here. The
-live-only Docker event monitor and retired Suricata bridge are documented in
-the observability and security references, but are deliberately not presented
-as reusable units.
+live-only Docker event monitor is documented in the observability reference,
+but is deliberately not presented as a reusable unit.
 
 ## Install
 
@@ -55,6 +54,4 @@ sudo systemctl daemon-reload
 ## Hardening notes
 
 All units set `NoNewPrivileges=true` and `PrivateTmp=true`. Where possible they
-also use `ProtectHome=read-only` / `ProtectSystem=strict`. The Suricata unit
-declares explicit `ReadOnlyPaths` / `ReadWritePaths` so it can read alerts but
-only write to its own log directory.
+also use `ProtectHome=read-only` / `ProtectSystem=strict`.

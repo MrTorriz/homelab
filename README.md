@@ -20,7 +20,7 @@
 - **Nothing leaves outside the VPN** — the whole host egresses through Mullvad in lockdown mode, IPv6 is off, and a scheduled check asks an outside service which exit the host *and* the torrent client actually use.
 - **No inbound ports** — external access rides an outbound Cloudflare Tunnel behind Cloudflare Access and Google OAuth. The tunnel itself is opened from inside the VPN, through a small WARP sidecar.
 - **Defense in depth** — UFW default-deny, fail2ban, `no-new-privileges` on all 46 containers, none privileged, two-tier Docker socket proxy, memory caps on everything that can balloon.
-- **Monitoring that reports its own blind spots** — Prometheus/Grafana metrics, 18 event-driven and scheduled ntfy alerters, a 65-check healthcheck every 15 minutes, Uptime Kuma, and a tunnel-health e-mail that still arrives if the host is dead.
+- **Monitoring that reports its own blind spots** — Prometheus/Grafana metrics, 19 event-driven and scheduled ntfy alerters, a 65-check healthcheck every 15 minutes, Uptime Kuma, and a tunnel-health e-mail that still arrives if the host is dead.
 - **Backups that have been restored** — nightly archives with database dumps, encrypted off-site copies, and restore drills of all six databases.
 
 ### Verified snapshot — 2026-10-31
@@ -94,8 +94,8 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 </p>
 
 <p align="center">
-  <img src="docs/img/alerting.gif" alt="Security detections — fail2ban jail status followed by a Suricata alert" width="900"/><br/>
-  <sub><b>Detection layer</b> — fail2ban enforcement and a sanitized Suricata alert (Suricata is not currently deployed)</sub>
+  <img src="docs/img/alerting.gif" alt="Detection layer — fail2ban jail status followed by the ntfy event feed: SSH login, sudo, proxy scan and a watched-file change" width="900"/><br/>
+  <sub><b>Detection layer</b> — fail2ban status and the event pushes that reach the phone</sub>
 </p>
 
 <p align="center">
@@ -116,7 +116,7 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 ├── docker/              # Compose stack (45 services; 46 containers live), .env.example, WARP egress sidecar
 ├── homepage/            # Homepage config, styles and the two Glance instances
 ├── scripts/             # healthcheck, VPN checks, backup/, security/, monitoring/, maintenance/, motd/, systemd/
-├── security/            # UFW baseline, fail2ban, SSH, sysctl, VPN kill-switch, hardening checklist, Suricata reference
+├── security/            # UFW baseline, fail2ban, SSH, sysctl, VPN kill-switch, hardening checklist
 ├── monitoring/          # Prometheus scrape config, Grafana provisioning and the overview dashboard
 ├── docs/                # Architecture, security, observability, metrics, runbook, DR, decisions, lessons learned
 └── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
@@ -161,8 +161,7 @@ External access is opt-in — set up a Cloudflare Tunnel and point it at `npm:44
 - [`docs/disaster-recovery.md`](docs/disaster-recovery.md) — RTO/RPO targets, restore tests and procedures
 - [`docs/decisions.md`](docs/decisions.md) — Why these tools and not the alternatives
 - [`docs/lessons-learned.md`](docs/lessons-learned.md) — What went wrong, why, and what changed
-- [`docs/hardware.md`](docs/hardware.md) — Specs, storage layout, GPU role
-- [`docs/cost.md`](docs/cost.md) — Historical cost breakdown (April 2026)
+- [`docs/hardware.md`](docs/hardware.md) — Specs, storage layout, GPU role, running cost
 - [`SECURITY.md`](SECURITY.md) — How to report a sanitization miss
 
 ## License
