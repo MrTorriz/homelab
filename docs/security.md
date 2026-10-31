@@ -51,7 +51,7 @@ The attack surface mapped against [Microsoft's STRIDE model](https://learn.micro
 The kill-switch is verifiable, not aspirational — `vpn-killswitch-check.sh` asks an outside service which exit the host and the torrent client actually use, and fails unless both are Mullvad:
 
 <p align="center">
-  <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check verifying that both the host and qBittorrent exit through Mullvad" width="780"/>
+  <img src="img/vpn-killswitch.gif" alt="vpn-killswitch-check verifying that both the host and qBittorrent exit through Mullvad" width="850"/>
   <br/>
   <sub>Synthetic demo (<code>scripts/demo/</code>); not a live capture.</sub>
 </p>

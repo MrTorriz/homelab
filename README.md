@@ -89,21 +89,21 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 <br/>
 
 <p align="center">
-  <img src="docs/img/server-motd.gif" alt="SSH login banner — hostname block letters, load/GPU/memory/disk bars, docker, VPN, last login, backup and certificate status" width="900"/><br/>
+  <img src="docs/img/server-motd.gif" alt="SSH login banner — hostname block letters, load/GPU/memory/disk bars, docker, VPN, last login, backup and certificate status" width="590"/><br/>
   <sub><b>MOTD</b> — what an SSH login looks like</sub>
 </p>
 
 <p align="center">
-  <img src="docs/img/alerting.gif" alt="Detection layer — fail2ban jail status followed by the ntfy event feed: SSH login, sudo, proxy scan and a watched-file change" width="900"/><br/>
+  <img src="docs/img/alerting.gif" alt="Detection layer — fail2ban jail status followed by the ntfy event feed: SSH login, sudo, proxy scan and a watched-file change" width="700"/><br/>
   <sub><b>Detection layer</b> — fail2ban status and the event pushes that reach the phone</sub>
 </p>
 
 <p align="center">
-  <img src="docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check verifying that both the host and qBittorrent exit through Mullvad" width="900"/><br/>
+  <img src="docs/img/vpn-killswitch.gif" alt="vpn-killswitch-check verifying that both the host and qBittorrent exit through Mullvad" width="850"/><br/>
   <sub><b>Kill-switch check</b> — host and torrent client both exit via Mullvad</sub>
 </p>
 
-<p align="center"><sub>Terminal demos rendered with <code>vhs</code> from <code>scripts/demo/</code>, all 2000 px wide at the same font size (2× for high-DPI screens). The MOTD is a fixed snapshot of a real login; ntfy and kill-switch values are synthetic.</sub></p>
+<p align="center"><sub>Terminal demos rendered with <code>vhs</code> from <code>scripts/demo/</code> in one shared theme and font size, shown at half their pixel width for high-DPI screens. The MOTD is a fixed snapshot of a real login; ntfy and kill-switch values are synthetic.</sub></p>
 
 </details>
 
@@ -122,7 +122,7 @@ See the full [service catalogue](docker/README.md#service-catalogue) and [observ
 └── .github/workflows/   # CI: shellcheck, yamllint, markdownlint, gitleaks, compose validation, link + fact checks
 ```
 
-The repository's social preview is drawn in [`docs/img/social-preview.svg`](docs/img/social-preview.svg), which frames the Homepage capture, and rendered to [`social-preview.png`](docs/img/social-preview.png) at 1280 × 640; `docs/img/architecture.svg` is hand-edited.
+The repository's social preview is drawn in [`docs/img/social-preview.svg`](docs/img/social-preview.svg), which frames the Homepage capture, and rendered to [`social-preview.png`](docs/img/social-preview.png) at 1280 × 640; [`docs/img/architecture.svg`](docs/img/architecture.svg) is drawn by [`scripts/diagrams/architecture.py`](scripts/diagrams/architecture.py).
 
 ## Reusing pieces
 

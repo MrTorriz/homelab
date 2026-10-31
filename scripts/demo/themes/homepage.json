@@ -1,0 +1,23 @@
+{
+  "name": "Homepage",
+  "background": "#0c0c0c",
+  "foreground": "#ededed",
+  "cursor": "#8dbbd5",
+  "selection": "#22313a",
+  "black": "#0c0c0c",
+  "red": "#f87171",
+  "green": "#34d399",
+  "yellow": "#e3b341",
+  "blue": "#8dbbd5",
+  "magenta": "#c4b5fd",
+  "cyan": "#8dbbd5",
+  "white": "#c4c4c4",
+  "brightBlack": "#6b6b6b",
+  "brightRed": "#fca5a5",
+  "brightGreen": "#6ee7b7",
+  "brightYellow": "#f5c96a",
+  "brightBlue": "#a7cddd",
+  "brightMagenta": "#ddd6fe",
+  "brightCyan": "#a7cddd",
+  "brightWhite": "#ffffff"
+}
