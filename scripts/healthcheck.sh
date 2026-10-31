@@ -20,9 +20,9 @@ DOMAIN="${DOMAIN:-example.com}"
 ERRORS=()
 
 # ── 1. Containers ──
-# 43 names = every service in docker/compose.yml (2026-08-28).
+# 45 names = every service in docker/compose.yml (2026-10-31).
 EXPECTED=(
-  homepage glance glance-amber npm
+  homepage glance glance-amber npm uptime-kuma
   portainer dozzle watchtower diun docker-proxy docker-proxy-rw
   jellyfin sonarr radarr lidarr bazarr prowlarr flaresolverr
   qbittorrent tdarr seerr audiobookshelf
@@ -31,7 +31,7 @@ EXPECTED=(
   miniflux miniflux-db
   adguardhome glances scrutiny speedtest
   prometheus grafana node-exporter nvidia-gpu-exporter cadvisor
-  cloudflared
+  cloudflare-egress cloudflared
   ntfy it-tools drawio
 )
 running=$(docker ps --format '{{.Names}}')
